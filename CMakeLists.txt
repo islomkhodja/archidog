@@ -34,7 +34,7 @@ target_compile_options(client
         )
 
 add_executable(server server/main.cpp
-        server/main.cpp)
+        server/main.cpp server/ArchiveServer.cpp server/ArchiveServer.h)
 
 target_include_directories(server
         PUBLIC
