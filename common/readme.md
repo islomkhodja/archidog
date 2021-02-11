@@ -1,1 +1,1 @@
-# common for server and client
+# common sources for server and client
