@@ -54,6 +54,8 @@ private:
     TcpAcceptor m_acceptor;
 
     std::string m_workDirectory;
+
+    void doAccept();
 };
 
 

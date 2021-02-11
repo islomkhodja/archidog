@@ -1,8 +1,21 @@
 #include <iostream>
 
-using namespace std;
-int main() {
-    cout << "Hello World" << endl;
+#include <boost/asio/io_service.hpp>
+
+#include "ArchiveServer.h"
+
+
+int main()
+{
+    try {
+        boost::asio::io_service ioService;
+
+        ArchiveServer server(ioService, 9898, "../server_files");
+
+        ioService.run();
+    } catch (std::exception& e) {
+        std::cerr << "Exception: " << e.what() << "\n";
+    }
 
     return 0;
 }
