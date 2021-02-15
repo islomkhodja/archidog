@@ -33,8 +33,7 @@ target_compile_options(client
         -DBOOST_LOG_DYN_LINK
         )
 
-add_executable(server server/main.cpp
-        server/main.cpp server/ArchiveServer.cpp server/ArchiveServer.h)
+add_executable(server server/main.cpp server/ArchiveServer.h server/ArchiveServer.cpp )
 
 target_include_directories(server
         PUBLIC
