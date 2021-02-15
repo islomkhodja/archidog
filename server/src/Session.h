@@ -1,5 +1,6 @@
-#ifndef BOOST_ARCHIVE_SERVER_H
-#define BOOST_ARCHIVE_SERVER_H
+
+#ifndef ARCHIVE_SERVER_SESSION_H
+#define ARCHIVE_SERVER_SESSION_H
 
 #include <iostream>
 #include <array>
@@ -8,7 +9,6 @@
 #include <memory>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
-
 
 class Session
         : public std::enable_shared_from_this<Session>
@@ -81,21 +81,5 @@ void Session::writeBuffer(Buffer& t_buffer, const bool once)
                              });
 }
 
-class ArchiveServer {
-public:
-    using TcpSocket = boost::asio::ip::tcp::socket;
-    using TcpAcceptor = boost::asio::ip::tcp::acceptor;
-    using IoService = boost::asio::io_service;
 
-    ArchiveServer(IoService& t_ioService, short t_port, std::string const& t_workDirectory);
-
-private:
-    void createWorkDirectory();
-    void doAccept();
-
-    TcpSocket m_socket;
-    TcpAcceptor m_acceptor;
-    std::string m_workDirectory;
-};
-
-#endif //BOOST_ARCHIVE_SERVER_H
+#endif //ARCHIVE_SERVER_SESSION_H
