@@ -18,7 +18,7 @@ ArchiveServer::ArchiveServer(IoService &t_ioService, short t_port, std::string c
 }
 
 void ArchiveServer::doAccept() {
-    std::cout << __FUNCTION__ << "пытаемся подключит клиента к серверу" << std::endl;
+    std::cout << __FUNCTION__ << "пытаемся подключить клиента к серверу" << std::endl;
     m_acceptor.async_accept(m_socket,
                             [this](boost::system::error_code ec) {
                                 if (!ec) {
@@ -37,7 +37,7 @@ void ArchiveServer::createWorkDirectory() {
     if (!exists(currentPath) && !create_directory(currentPath)) {
         std::cout << "Не удалось создать рабочую папку: " << m_workDirectory << std::endl;;
     } else {
-        std::cout << "папка создан или уже существует: " << m_workDirectory << std::endl;
+        std::cout << "папка создана или уже существует: " << m_workDirectory << std::endl;
     }
     current_path(currentPath);
 }
