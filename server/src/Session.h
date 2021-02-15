@@ -16,7 +16,7 @@ class Session
 public:
     using TcpSocket = boost::asio::ip::tcp::socket;
 
-    Session(TcpSocket t_socket);
+    Session(TcpSocket t_socket, boost::asio::io_context& ioContext);
 
     void start()
     {
@@ -26,16 +26,18 @@ public:
 private:
     void handle_read();
     void commandRouter(size_t t_bytesTransferred);
-    std::string getFileName(std::string const &fileName, std::string const type);
+    std::string getFileName(std::string const &fileName, std::string type);
     void createFile(std::string const &fileName);
     void doReadFileContent(size_t t_bytesTransferred);
     void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
-    float compress(std::basic_string<char> fname, const std::basic_string<char> cname);
-    void decompress(std::basic_string<char> fname, const std::basic_string<char> uname);
+    float compress(std::basic_string<char> fname, std::basic_string<char> cname);
+    void decompress(std::basic_string<char> fname, std::basic_string<char> uname);
     void sendFile(boost::system::error_code ec);
 
 
     TcpSocket m_socket;
+    boost::asio::io_context& ioContext;
+    boost::asio::io_context::strand my_strand;
     enum { MaxLength = 40960 };
     std::array<char, MaxLength> m_buf;
     enum { MessageSize = 1024 };
@@ -47,6 +49,7 @@ private:
     std::string m_fileName;
     boost::asio::streambuf m_request;
     std::string m_command;
+    std::string m_user;
 
     void writeToClient(std::string &message);
 
@@ -58,7 +61,7 @@ private:
 
     void openFile(const std::string &t_path);
     template<class Buffer>
-    void writeBuffer(Buffer &t_buffer, const bool once = false);
+    void writeBuffer(Buffer &t_buffer, bool once = false);
 
     void zipCommandHandler(const std::string &command);
     void getCommandHandler(const std::string &fileName);
@@ -72,13 +75,13 @@ void Session::writeBuffer(Buffer& t_buffer, const bool once)
     auto self(shared_from_this());
     boost::asio::async_write(m_socket,
                              t_buffer,
-                             [this, self, once](boost::system::error_code ec, size_t length)
+                             boost::asio::bind_executor(my_strand,[this, self, once](boost::system::error_code ec, size_t length)
                              {
                                  if (!ec && !once) {
                                      std::cout << "ok отправили " << length << " байтов. Если что еще раз отправим" << std::endl;
                                      sendFile(ec);
                                  }
-                             });
+                             }));
 }
 
 

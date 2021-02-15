@@ -8,6 +8,7 @@
 
 ArchiveServer::ArchiveServer(IoService &t_ioService, short t_port, std::string const &t_workingDirectory)
         : m_socket(t_ioService),
+          m_ioContext(t_ioService),
           m_acceptor(t_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), t_port)),
           m_workDirectory(t_workingDirectory) {
     std::cout << "Server started\n";
@@ -23,7 +24,7 @@ void ArchiveServer::doAccept() {
                             [this](boost::system::error_code ec) {
                                 if (!ec) {
                                     std::cout << "async_accept::" <<  "клиент подключился!" << std::endl;
-                                    std::make_shared<Session>(std::move(m_socket))->start();
+                                    std::make_shared<Session>(std::move(m_socket), m_ioContext)->start();
                                 }
 
                                 doAccept();

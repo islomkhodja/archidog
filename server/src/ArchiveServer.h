@@ -14,7 +14,7 @@ class ArchiveServer {
 public:
     using TcpSocket = boost::asio::ip::tcp::socket;
     using TcpAcceptor = boost::asio::ip::tcp::acceptor;
-    using IoService = boost::asio::io_service;
+    using IoService = boost::asio::io_context;
 
     ArchiveServer(IoService& t_ioService, short t_port, std::string const& t_workDirectory);
 
@@ -25,6 +25,7 @@ private:
     TcpSocket m_socket;
     TcpAcceptor m_acceptor;
     std::string m_workDirectory;
+    IoService& m_ioContext;
 };
 
 #endif //BOOST_ARCHIVE_SERVER_H

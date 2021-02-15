@@ -1,14 +1,16 @@
 #include "Session.h"
 
-Session::Session(TcpSocket t_socket)
-        : m_socket(std::move(t_socket)) {
+Session::Session(TcpSocket t_socket, boost::asio::io_context& io)
+        : m_socket(std::move(t_socket)),
+         ioContext(io),
+         my_strand(ioContext) {
 }
 
 
 void Session::handle_read() {
     auto self = shared_from_this();
     async_read_until(m_socket, m_requestBuf_, "\n",
-                     [this, self](boost::system::error_code ec, size_t bytes) {
+                     boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
                          if (!ec) {
                              std::cout << "handle_read(); уже прочитал" << std::endl;
                              commandRouter(bytes);
@@ -16,19 +18,23 @@ void Session::handle_read() {
 
                          else
                              handleError(__FUNCTION__, ec);
-                     });
+                     }));
 }
 
 bool Session::find_file( const boost::filesystem::path & dir_path,         // in this directory,
                          const std::string & file_name, // search for this name,
                          boost::filesystem::path & path_found )            // placing path here if found
 {
+    std::cout << "dir_path: " << dir_path.c_str() << " " << file_name << std::endl;
+
     if ( !exists( dir_path ) ) return false;
     boost::filesystem::directory_iterator end_itr; // default construction yields past-the-end
     for ( boost::filesystem::directory_iterator itr( dir_path );
           itr != end_itr;
           ++itr )
     {
+        std::cout << "faf:" << itr->path().filename() << std::endl;
+
         if ( is_directory(itr->status()) )
         {
             if ( find_file( itr->path(), file_name, path_found ) ) return true;
@@ -52,7 +58,7 @@ void Session::commandRouter(size_t t_bytesTransferred) {
     std::cout << "line: " << line << std::endl;
     std::istream requestStream(&m_requestBuf_);
     requestStream >> m_command;
-
+    requestStream >> m_user;
 
     if (m_command == "get") {
         requestStream >> m_fileName;
@@ -164,7 +170,7 @@ void Session::openFile(std::string const& t_path)
 void Session::zipCommandHandler(const std::string& command) {
     auto self = shared_from_this();
     m_socket.async_read_some(boost::asio::buffer(m_buf.data(), m_buf.size()),
-                             [this, self, command](boost::system::error_code ec, size_t bytes) {
+                             boost::asio::bind_executor(my_strand, [this, self, command](boost::system::error_code ec, size_t bytes) {
                                  if (!ec) {
                                      std::cout << "recv " << bytes << " from response" << std::endl;
                                      if (bytes > 0) {
@@ -191,13 +197,13 @@ void Session::zipCommandHandler(const std::string& command) {
                                  } else {
                                      handleError(__FUNCTION__, ec);
                                  }
-                             });
+                             }));
 }
 
 void Session::unZipCommandHandler(const std::string& command) {
     auto self = shared_from_this();
     m_socket.async_read_some(boost::asio::buffer(m_buf.data(), m_buf.size()),
-                             [this, self, command](boost::system::error_code ec, size_t bytes) {
+                             boost::asio::bind_executor(my_strand, [this, self, command](boost::system::error_code ec, size_t bytes) {
                                  if (!ec) {
                                      std::cout << "recv " << bytes << " from response" << std::endl;
                                      if (bytes > 0) {
@@ -224,7 +230,7 @@ void Session::unZipCommandHandler(const std::string& command) {
                                  } else {
                                      handleError(__FUNCTION__, ec);
                                  }
-                             });
+                             }));
 }
 
 void Session::createFile(std::string const &fileName) {
@@ -257,9 +263,9 @@ void Session::doReadFileContent(size_t t_bytesTransferred) {
     }
     auto self = shared_from_this();
     m_socket.async_read_some(boost::asio::buffer(m_buf.data(), m_buf.size()),
-                             [this, self](boost::system::error_code ec, size_t bytes) {
+                             boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
                                  doReadFileContent(bytes);
-                             });
+                             }));
 }
 
 
@@ -271,14 +277,14 @@ void Session::handleError(std::string const &t_functionName, boost::system::erro
 void Session::writeToClient(std::string &message) {
     auto self(shared_from_this());
     boost::asio::async_write(m_socket, boost::asio::buffer(message),
-                             [this, self](boost::system::error_code ec, std::size_t)
+                             boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, std::size_t)
                              {
                                  if (!ec)
                                  {
                                  } else {
                                      handleError(__FUNCTION__, ec);
                                  }
-                             });
+                             }));
 }
 
 std::string Session::getFileName(const std::string& fileName, const std::string type) {
@@ -362,7 +368,7 @@ void Session::decompress(std::basic_string<char> fname, const std::basic_string<
 
 void Session::getCommandHandler(const std::string& fileName) {
     boost::filesystem::path filePath;
-    if (find_file(boost::filesystem::path("../new_files"), fileName, filePath)) {
+    if (find_file(boost::filesystem::path("../server_files"), fileName, filePath)) {
         openFile(fileName);
         writeBuffer(m_request);
     } else {
