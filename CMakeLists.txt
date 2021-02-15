@@ -11,7 +11,7 @@ set(Boost_USE_STATIC_LIBS ON)
 FIND_PACKAGE(Boost 1.58.0 REQUIRED COMPONENTS log_setup log system thread)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
-add_executable(client client/main.cpp)
+add_executable(client client/main.cpp client/client.cpp client/client.h)
 
 target_include_directories(client
         PUBLIC
