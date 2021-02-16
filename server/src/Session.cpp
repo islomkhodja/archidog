@@ -314,8 +314,10 @@ void Session::decompress(std::basic_string<char> fname, const std::basic_string<
 void Session::getCommandHandler(const std::string& fileName) {
     boost::filesystem::path filePath;
     if (find_file(boost::filesystem::path("../server_files"), fileName, filePath)) {
-        openFile(fileName);
-        writeBuffer(m_request);
+        openFile(fileName); // open the file
+        // and prepare m_request for request to client
+
+        writeBuffer(m_request); // send to client;
     } else {
         boost::asio::streambuf rmessage;
         std::ostream response(&rmessage);
@@ -342,10 +344,10 @@ void Session::sendFile(boost::system::error_code t_ec) {
             writeBuffer(buf);
         } else {
             std::cout << "конец!" << std:: endl;
-            boost::asio::streambuf rmessage;
-            std::ostream response(&rmessage);
-            response << "\n READY" << " " << m_fileName;
-            writeBuffer(rmessage, true);
+//            boost::asio::streambuf rmessage;
+//            std::ostream response(&rmessage);
+//            response << "\n\n OK" << " " << m_fileName;
+//            writeBuffer(rmessage, true);
         }
     } else {
         std::cout << "Error: " << t_ec.message();
@@ -368,7 +370,7 @@ void Session::openFile(std::string const& t_path)
     boost::filesystem::path p(t_path);
     m_fileName = p.filename().string();
     //requestStream << p.filename().string() << "\n" << fileSize << "\n\n";
-    requestStream << m_fileName << " " << fileSize << "\n\n";
+    requestStream << "Ready " << m_fileName << " " << fileSize << "\n\n";
     std::cout << "Request size: " << m_request.size() << std::endl;
 }
 
