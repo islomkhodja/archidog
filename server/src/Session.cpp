@@ -9,7 +9,7 @@ Session::Session(TcpSocket t_socket, boost::asio::io_context& io)
 
 void Session::handle_read() {
     auto self = shared_from_this();
-    async_read_until(m_socket, m_requestBuf_, "\n",
+    async_read_until(m_socket, m_requestBuf_, "\n\n",
                      boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
                          if (!ec) {
                              std::cout << "handle_read(); уже прочитал" << std::endl;
@@ -185,6 +185,7 @@ void Session::zipCommandHandler(const std::string& command) {
                                              remove(m_fileName);
                                              if (command == "zip") {
                                                  std::string ok("OK " + compressedFileName);
+                                                 std::cout << ok << std::endl;
                                                  writeToClient(ok);
                                              } else if (command  == "zip-and-get"){
                                                  getCommandHandler(compressedFileName);
@@ -218,6 +219,7 @@ void Session::unZipCommandHandler(const std::string& command) {
                                              remove(m_fileName);
                                              if (command == "unzip") {
                                                  std::string ok("OK " + deCompressedFileName);
+                                                 std::cout << ok << std::endl;
                                                  writeToClient(ok);
                                              } else if (command  == "unzip-and-get"){
                                                  getCommandHandler(deCompressedFileName);
