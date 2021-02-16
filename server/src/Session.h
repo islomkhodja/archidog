@@ -63,10 +63,14 @@ private:
     template<class Buffer>
     void writeBuffer(Buffer &t_buffer, bool once = false);
 
+    //TODO remove command params from Handlers
     void zipCommandHandler(const std::string &command);
-    void getCommandHandler(const std::string &fileName);
-
     void unZipCommandHandler(const std::string &command);
+
+    void zipLogic();
+    void unZipLogic();
+
+    void getCommandHandler(const std::string &fileName);
 };
 
 template<class Buffer>
