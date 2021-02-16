@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
+#include <boost/filesystem.hpp>
 #include <fstream>
 
 using boost::asio::ip::tcp;
@@ -10,8 +11,7 @@ string port;
 
 
 
-string zip(string& user, string& file);
-string unzip(string& user, string& file);
+string sendFileWithCommand(const string& user, const string &file, const string& command);
 bool get(string& user, string& file);
 bool zip_and_get(string& user, string& file);
 bool unzip_and_get(string& user, string& file);
@@ -36,16 +36,17 @@ int main(int argc, char* argv[]) {
         port = hostPort.substr(pos+1);
         host = hostPort.substr(0, pos);
         string username = "islom";
-        string archived_file = zip( username, fileName);
+        string archived_file = sendFileWithCommand( username, fileName, string("zip"));
         cout << "archived_file: " << archived_file << endl;
-
+        string decompressed_file = sendFileWithCommand( username, string("../client_files/salom.txt.sev"), string("unzip"));
+        cout << "decompressed_file: " << decompressed_file << endl;
     } catch (exception& e) {
         cout << "some error happened" << endl;
         cout << e.what() << endl;
     }
 }
 
-string zip(string &user, string &file) {
+string sendFileWithCommand(const string& user, const string &file, const string& command) {
     boost::asio::io_context ioContext;
     tcp::resolver resolver(ioContext);
     tcp::resolver::query query(host, port);
@@ -54,14 +55,14 @@ string zip(string &user, string &file) {
     tcp::socket socket(ioContext);
     boost::system::error_code error = boost::asio::error::host_not_found;
     boost::asio::connect(socket, endpoint_iterator, error);
+    boost::filesystem::path p(file);
 
     if (error) {
         cout << "failed to connect" << endl;
         return __TIME__;
     }
 
-    enum { MessageSize = 1024 };
-    array<char, MessageSize> buf{};
+
     cout << "connected to " << host << ":" << port << endl;
     ifstream source_file(file, ios_base::binary | ios_base::ate);
     if (!source_file)
@@ -75,10 +76,13 @@ string zip(string &user, string &file) {
     auto file_size = source_file.tellg();
     source_file.seekg(0, source_file.beg);
 
+    enum { MessageSize = 1024 };
+    array<char, MessageSize> buf{};
+
     // first send file name and file size to server
     boost::asio::streambuf request;
     std::ostream request_stream(&request);
-    request_stream << "zip" << " " << user << " " << "salom.txt" << " " << file_size << "\n\n";
+    request_stream << command << " " << user << " " << p.filename().string() << " " << file_size << "\n\n";
     boost::asio::write(socket, request);
 
     // then send file
@@ -96,6 +100,8 @@ string zip(string &user, string &file) {
         auto m_buf = boost::asio::buffer(buf.data(), static_cast<size_t>(source_file.gcount()));
         boost::system::error_code error3;
         boost::asio::write(socket, m_buf, error3);
+
+        cout << "send byte" << endl;
     }
 
     cout << "file stream sent" << endl;
