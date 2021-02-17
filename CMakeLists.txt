@@ -8,7 +8,7 @@ SET(Boost_USE_MULTITHREAD ON)
 # we will use static libs
 set(Boost_USE_STATIC_LIBS ON)
 
-FIND_PACKAGE(Boost 1.58.0 REQUIRED COMPONENTS log_setup log system thread)
+FIND_PACKAGE(Boost 1.58.0 REQUIRED COMPONENTS log_setup log system thread program_options)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
 add_executable(client client/src/main.cpp client/src/client.cpp client/src/client.h)
@@ -26,6 +26,7 @@ target_link_libraries(client
         Boost::system
         Boost::thread
         Boost::filesystem
+        Boost::program_options
         )
 
 target_compile_options(client
@@ -33,7 +34,7 @@ target_compile_options(client
         -DBOOST_LOG_DYN_LINK
         )
 
-add_executable(server server/src/main.cpp server/src/ArchiveServer.h server/src/ArchiveServer.cpp server/src/Session.cpp server/src/Session.h)
+add_executable(server server/src/main.cpp server/src/ArchiveServer.h server/src/ArchiveServer.cpp server/src/Session.cpp server/src/Session.h server/src/globals.cpp server/src/globals.h)
 
 target_include_directories(server
         PUBLIC
@@ -48,6 +49,7 @@ target_link_libraries(server
         Boost::system
         Boost::thread
         Boost::filesystem
+        Boost::program_options
         )
 
 target_compile_options(server

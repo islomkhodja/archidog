@@ -6,10 +6,10 @@
 #include "ArchiveServer.h"
 
 
-ArchiveServer::ArchiveServer(IoService &t_ioService, short t_port, std::string const &t_workingDirectory)
+ArchiveServer::ArchiveServer(IoService &t_ioService, boost::asio::ip::address ip, short t_port, std::string const &t_workingDirectory)
         : m_socket(t_ioService),
           m_ioContext(t_ioService),
-          m_acceptor(t_ioService, boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), t_port)),
+          m_acceptor(t_ioService, boost::asio::ip::tcp::endpoint(ip, t_port)),
           m_workDirectory(t_workingDirectory) {
     std::cout << "Server started\n";
 
