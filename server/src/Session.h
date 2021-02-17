@@ -30,8 +30,6 @@ private:
     void createFile(std::string const &fileName);
     void doReadFileContent(size_t t_bytesTransferred);
     void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
-    float compress(std::basic_string<char> fname, std::basic_string<char> cname);
-    void decompress(std::basic_string<char> fname, std::basic_string<char> uname);
     void sendFile(boost::system::error_code ec);
 
 

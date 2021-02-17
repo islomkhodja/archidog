@@ -19,7 +19,7 @@ ArchiveServer::ArchiveServer(IoService &t_ioService, boost::asio::ip::address ip
 }
 
 void ArchiveServer::doAccept() {
-    std::cout << __FUNCTION__ << "пытаемся подключить клиента к серверу" << std::endl;
+    std::cout << __FUNCTION__ << " пытаемся подключить клиента к серверу" << std::endl;
     m_acceptor.async_accept(m_socket,
                             [this](boost::system::error_code ec) {
                                 if (!ec) {
