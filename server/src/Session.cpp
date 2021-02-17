@@ -11,12 +11,12 @@ Session::Session(TcpSocket t_socket, boost::asio::io_context& io)
 }
 
 
-void Session::handle_read() {
+void Session::read_commands() {
     auto self = shared_from_this();
-    async_read_until(m_socket, m_requestBuf_, "\n\n",
+    async_read_until(m_socket, m_request_buf_read, "\n\n",
                      boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
                          if (!ec) {
-                             std::cout << "handle_read(); уже прочитал" << std::endl;
+                             std::cout << "read_commands(); уже прочитал" << std::endl;
                              commandRouter(bytes);
                          }
 
@@ -64,26 +64,41 @@ bool Session::checkUserActive() {
 
 void Session::commandRouter(size_t t_bytesTransferred) {
     std::cout << __FUNCTION__ << "(" << t_bytesTransferred << ")"
-              << ", in_avail = " << m_requestBuf_.in_avail() << ", size = "
-              << m_requestBuf_.size() << ", max_size = " << m_requestBuf_.max_size() << "." << std::endl;
-    boost::asio::streambuf::const_buffers_type bufs = m_requestBuf_.data();
+              << ", in_avail = " << m_request_buf_read.in_avail() << ", size = "
+              << m_request_buf_read.size() << ", max_size = " << m_request_buf_read.max_size() << "." << std::endl;
+    boost::asio::streambuf::const_buffers_type bufs = m_request_buf_read.data();
     std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + t_bytesTransferred);
     std::cout << "line: " << line << std::endl;
-    std::istream requestStream(&m_requestBuf_);
+    std::istream requestStream(&m_request_buf_read);
     requestStream >> m_command;
+    if (m_command.empty()) {
+        std::string error = "\nError COMMAND_IS_EMPTY";
+        writeToClient(error);
+        return;
+    }
+
     requestStream >> m_user;
+    if (m_user.empty()) {
+        std::string error = "\nError USERNAME_IS_EMPTY";
+        writeToClient(error);
+        return;
+    }
 
     if (!checkUserActive()) {
-        boost::asio::streambuf rmessage;
-        std::ostream response(&rmessage);
-        response << "\nError" << " " << "USER_REACHED_LIMIT";
-        writeBuffer(rmessage, true);
+        std::string error = "\nError USER_REACHED_LIMIT";
+        writeToClient(error);
         return;
     }
 
 
     if (m_command == "get") {
         requestStream >> m_fileName;
+        if (m_fileName.empty()) {
+            std::string error = "\nError FILENAME_IS_EMPTY";
+            writeToClient(error);
+            return;
+        }
+
         getCommandHandler(m_fileName);
         return;
     }
@@ -92,9 +107,16 @@ void Session::commandRouter(size_t t_bytesTransferred) {
     if (m_command == "zip" || m_command == "zip-and-get") {
         requestStream >> m_fileName;
         requestStream >> m_fileSize;
+        if (m_fileName.empty() || !m_fileSize) {
+            std::string error = "\nError ZIP_WRONG_ARGS";
+            writeToClient(error);
+            return;
+        }
+
+
 
         // убирать 2 /n
-        requestStream.read(m_buf.data(), 2);
+        requestStream.read(m_read_buf.data(), 2);
 
         auto pos = m_fileName.find_last_of('\\');
         if (pos != std::string::npos)
@@ -104,9 +126,9 @@ void Session::commandRouter(size_t t_bytesTransferred) {
 
         // записать лишние байты в файл
         do {
-            requestStream.read(m_buf.data(), m_buf.size());
+            requestStream.read(m_read_buf.data(), m_read_buf.size());
             std::cout << __FUNCTION__ << " write " << requestStream.gcount() << " bytes." << std::endl;;
-            m_outputFile.write(m_buf.data(), requestStream.gcount());
+            m_outputFile.write(m_read_buf.data(), requestStream.gcount());
         } while (requestStream.gcount() > 0);
 
         if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
@@ -120,9 +142,14 @@ void Session::commandRouter(size_t t_bytesTransferred) {
     if (m_command == "unzip" || m_command == "unzip-and-get") {
         requestStream >> m_fileName;
         requestStream >> m_fileSize;
+        if (m_fileName.empty() || !m_fileSize) {
+            std::string error = "\nError UNZIP_WRONG_ARGS";
+            writeToClient(error);
+            return;
+        }
 
         // убирать 2 /n
-        requestStream.read(m_buf.data(), 2);
+        requestStream.read(m_read_buf.data(), 2);
 
         auto pos = m_fileName.find_last_of('\\');
         if (pos != std::string::npos)
@@ -132,9 +159,9 @@ void Session::commandRouter(size_t t_bytesTransferred) {
 
         // записать лишние байты в файл
         do {
-            requestStream.read(m_buf.data(), m_buf.size());
+            requestStream.read(m_read_buf.data(), m_read_buf.size());
             std::cout << __FUNCTION__ << " write " << requestStream.gcount() << " bytes." << std::endl;;
-            m_outputFile.write(m_buf.data(), requestStream.gcount());
+            m_outputFile.write(m_read_buf.data(), requestStream.gcount());
         } while (requestStream.gcount() > 0);
 
         if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
@@ -145,10 +172,8 @@ void Session::commandRouter(size_t t_bytesTransferred) {
         return;
     }
 
-    boost::asio::streambuf rmessage;
-    std::ostream response(&rmessage);
-    response << "\nERROR" << " " << "UNKNOWN_COMMAND";
-    writeBuffer(rmessage, true);
+    std::string error = "\nError UNKNOWN_COMMAND";
+    writeToClient(error);
 }
 
 void Session::zipLogic() {
@@ -163,7 +188,6 @@ void Session::zipLogic() {
     } else if (m_command  == "zip-and-get"){
         getCommandHandler(compressedFileName);
     }
-    return;
 }
 
 void Session::unZipLogic() {
@@ -178,18 +202,17 @@ void Session::unZipLogic() {
     } else if (m_command  == "unzip-and-get"){
         getCommandHandler(deCompressedFileName);
     }
-    return;
 }
 
 void Session::zipCommandHandler(const std::string& command) {
     auto self = shared_from_this();
     std::cout << "read wait" << std::endl;
-    m_socket.async_read_some(boost::asio::buffer(m_buf.data(), m_buf.size()),
+    m_socket.async_read_some(boost::asio::buffer(m_read_buf.data(), m_read_buf.size()),
                              boost::asio::bind_executor(my_strand, [this, self, command](boost::system::error_code ec, size_t bytes) {
                                  if (!ec) {
                                      std::cout << "recv " << bytes << " from response" << std::endl;
                                      if (bytes > 0) {
-                                         m_outputFile.write(m_buf.data(), static_cast<std::streamsize>(bytes));
+                                         m_outputFile.write(m_read_buf.data(), static_cast<std::streamsize>(bytes));
 
                                          std::cout << __FUNCTION__ << " recv " << m_outputFile.tellp() << " bytes" << std::endl;;
 
@@ -207,12 +230,12 @@ void Session::zipCommandHandler(const std::string& command) {
 
 void Session::unZipCommandHandler(const std::string& command) {
     auto self = shared_from_this();
-    m_socket.async_read_some(boost::asio::buffer(m_buf.data(), m_buf.size()),
+    m_socket.async_read_some(boost::asio::buffer(m_read_buf.data(), m_read_buf.size()),
                              boost::asio::bind_executor(my_strand, [this, self, command](boost::system::error_code ec, size_t bytes) {
                                  if (!ec) {
                                      std::cout << "recv " << bytes << " from response" << std::endl;
                                      if (bytes > 0) {
-                                         m_outputFile.write(m_buf.data(), static_cast<std::streamsize>(bytes));
+                                         m_outputFile.write(m_read_buf.data(), static_cast<std::streamsize>(bytes));
 
                                          std::cout << __FUNCTION__ << " recv " << m_outputFile.tellp() << " bytes" << std::endl;;
 
@@ -243,26 +266,6 @@ void Session::remove(std::string& fileName) {
     else
         puts( "File successfully deleted" );
 }
-
-
-void Session::doReadFileContent(size_t t_bytesTransferred) {
-    if (t_bytesTransferred > 0) {
-        m_outputFile.write(m_buf.data(), static_cast<std::streamsize>(t_bytesTransferred));
-
-        std::cout << __FUNCTION__ << " recv " << m_outputFile.tellp() << " bytes" << std::endl;;
-
-        if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
-            std::cout << "Received file: " << m_fileName << std::endl;
-            return;
-        }
-    }
-    auto self = shared_from_this();
-    m_socket.async_read_some(boost::asio::buffer(m_buf.data(), m_buf.size()),
-                             boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
-                                 doReadFileContent(bytes);
-                             }));
-}
-
 
 void Session::handleError(std::string const &t_functionName, boost::system::error_code const &t_ec) {
     std::cout << __FUNCTION__ << " in " << t_functionName << " due to "
@@ -300,12 +303,10 @@ void Session::getCommandHandler(const std::string& fileName) {
         openFile(fileName); // open the file
         // and prepare m_request for request to client
 
-        writeBuffer(m_request); // send to client;
+        writeBuffer(m_request_buf_send); // send to client;
     } else {
-        boost::asio::streambuf rmessage;
-        std::ostream response(&rmessage);
-        response << "\nERROR" << " " << "FILE_NOT_FOUND";
-        writeBuffer(rmessage, true);
+        std::string error = "\nError FILE_NOT_FOUND";
+        writeToClient(error);
     }
 }
 
@@ -313,7 +314,7 @@ void Session::getCommandHandler(const std::string& fileName) {
 void Session::sendFile(boost::system::error_code t_ec) {
     if (!t_ec) {
         if (m_sourceFile) {
-            m_sourceFile.read(s_buf.data(), s_buf.size());
+            m_sourceFile.read(m_send_buf.data(), m_send_buf.size());
             if (m_sourceFile.fail() && !m_sourceFile.eof()) {
                 auto msg = "Failed while reading file";
                 std::cout << msg;
@@ -323,7 +324,7 @@ void Session::sendFile(boost::system::error_code t_ec) {
             ss << "Send " << m_sourceFile.gcount() << " bytes, total: "
                << m_sourceFile.tellg() << " bytes";
             std::cout << ss.str() << std::endl;
-            auto buf = boost::asio::buffer(s_buf.data(), static_cast<size_t>(m_sourceFile.gcount()));
+            auto buf = boost::asio::buffer(m_send_buf.data(), static_cast<size_t>(m_sourceFile.gcount()));
             writeBuffer(buf);
         } else {
             std::cout << "конец!" << std:: endl;
@@ -349,12 +350,12 @@ void Session::openFile(std::string const& t_path)
     m_sourceFile.seekg(0, m_sourceFile.beg);
 
 
-    std::ostream requestStream(&m_request);
+    std::ostream requestStream(&m_request_buf_send);
     boost::filesystem::path p(t_path);
     m_fileName = p.filename().string();
     //requestStream << p.filename().string() << "\n" << fileSize << "\n\n";
     requestStream << "Ready " << m_fileName << " " << fileSize << "\n\n";
-    std::cout << "Request size: " << m_request.size() << std::endl;
+    std::cout << "Request size: " << m_request_buf_send.size() << std::endl;
 }
 
 bool Session::find_file( const boost::filesystem::path & dir_path,         // in this directory,

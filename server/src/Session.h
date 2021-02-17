@@ -20,57 +20,52 @@ public:
 
     void start()
     {
-        handle_read();
+        read_commands();
     }
 
 private:
-    void handle_read();
+    // main methods
+    void read_commands();
     void commandRouter(size_t t_bytesTransferred);
+    bool checkUserActive();
+    //TODO remove command params from Handlers
+    void zipCommandHandler(const std::string &command);
+    void unZipCommandHandler(const std::string &command);
+    void zipLogic();
+    void unZipLogic();
+    void getCommandHandler(const std::string &fileName);
+
+    // write methods
+    void writeToClient(std::string &message);
+    template<class Buffer>
+    void writeBuffer(Buffer &t_buffer, bool once = false);
+
+    // helper methods
     std::string getFileName(std::string const &fileName, std::string type);
     void createFile(std::string const &fileName);
-    void doReadFileContent(size_t t_bytesTransferred);
-    void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
     void sendFile(boost::system::error_code ec);
+    bool find_file(const boost::filesystem::path &dir_path, const std::string &file_name,
+              boost::filesystem::path &path_found);
+    void openFile(const std::string &t_path);
+    void remove(std::string &fileName);
+    void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
 
 
     TcpSocket m_socket;
     boost::asio::io_context& ioContext;
     boost::asio::io_context::strand my_strand;
+    boost::asio::streambuf m_request_buf_read;
+    boost::asio::streambuf m_request_buf_send;
     enum { MaxLength = 40960 };
-    std::array<char, MaxLength> m_buf;
+    std::array<char, MaxLength> m_read_buf;
     enum { MessageSize = 1024 };
-    std::array<char, MessageSize> s_buf;
-    boost::asio::streambuf m_requestBuf_;
+    std::array<char, MessageSize> m_send_buf;
     std::ofstream m_outputFile;
     std::ifstream m_sourceFile;
     size_t m_fileSize;
     std::string m_fileName;
-    boost::asio::streambuf m_request;
     std::string m_command;
     std::string m_user;
-
-    void writeToClient(std::string &message);
-
-    void remove(std::string &fileName);
-
-    bool
-    find_file(const boost::filesystem::path &dir_path, const std::string &file_name,
-              boost::filesystem::path &path_found);
-
-    void openFile(const std::string &t_path);
-    template<class Buffer>
-    void writeBuffer(Buffer &t_buffer, bool once = false);
-
-    //TODO remove command params from Handlers
-    void zipCommandHandler(const std::string &command);
-    void unZipCommandHandler(const std::string &command);
-
-    void zipLogic();
-    void unZipLogic();
-
-    void getCommandHandler(const std::string &fileName);
-
-    bool checkUserActive();
 };
 
 template<class Buffer>
