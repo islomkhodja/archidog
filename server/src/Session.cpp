@@ -362,7 +362,7 @@ void Session::decompress(std::basic_string<char> fname, const std::basic_string<
 
 void Session::getCommandHandler(const std::string& fileName) {
     boost::filesystem::path filePath;
-    if (find_file(boost::filesystem::path("../server_files"), fileName, filePath)) {
+    if (find_file(boost::filesystem::path(dir), fileName, filePath)) {
         openFile(fileName); // open the file
         // and prepare m_request for request to client
 
