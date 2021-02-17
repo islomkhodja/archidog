@@ -71,6 +71,8 @@ private:
     void unZipLogic();
 
     void getCommandHandler(const std::string &fileName);
+
+    bool checkUserActive();
 };
 
 template<class Buffer>

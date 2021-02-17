@@ -16,7 +16,7 @@ public:
     using TcpAcceptor = boost::asio::ip::tcp::acceptor;
     using IoService = boost::asio::io_context;
 
-    ArchiveServer(IoService& t_ioService, short t_port, std::string const& t_workDirectory);
+    ArchiveServer(IoService& t_ioService, boost::asio::ip::address ip, short t_port, std::string const& t_workDirectory);
 
 private:
     void createWorkDirectory();

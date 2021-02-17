@@ -1,4 +1,7 @@
+#include "globals.h"
 #include "Session.h"
+
+std::map<std::string, UserSettings> UserMap;
 
 Session::Session(TcpSocket t_socket, boost::asio::io_context& io)
         : m_socket(std::move(t_socket)),
@@ -21,6 +24,43 @@ void Session::handle_read() {
                      }));
 }
 
+bool Session::checkUserActive() {
+    if (UserMap.find(m_user) == UserMap.end()) {
+        UserMap[m_user] = { 1, time(nullptr), 0 };
+    } else {
+        std::time_t currentTime = time(nullptr);
+        double diff = difftime(currentTime, UserMap[m_user].lastActiveTime);
+        if (diff > 60) {
+            UserMap[m_user].userReqCount = 1;
+        } else {
+            UserMap[m_user].userReqCount += 1;
+        };
+
+        if (UserMap[m_user].userReqCount > reqsPerMin) {
+            std::cout << "many requests" << std::endl;
+            return false;
+        }
+
+        if (m_command  == "zip"
+        || m_command == "zip-and-get"
+        || m_command == "unzip-and-get"
+        || m_command == "unzip")
+        {
+            UserMap[m_user].userMaxFile += 1;
+        }
+
+
+        if (UserMap[m_user].userMaxFile > maxNFiles) {
+            std::cout << "user has reached the limit file" << std::endl;
+            return false;
+        }
+
+        UserMap[m_user].lastActiveTime = currentTime;
+    }
+
+    return true;
+}
+
 void Session::commandRouter(size_t t_bytesTransferred) {
     std::cout << __FUNCTION__ << "(" << t_bytesTransferred << ")"
               << ", in_avail = " << m_requestBuf_.in_avail() << ", size = "
@@ -31,6 +71,15 @@ void Session::commandRouter(size_t t_bytesTransferred) {
     std::istream requestStream(&m_requestBuf_);
     requestStream >> m_command;
     requestStream >> m_user;
+
+    if (!checkUserActive()) {
+        boost::asio::streambuf rmessage;
+        std::ostream response(&rmessage);
+        response << "\nError" << " " << "USER_REACHED_LIMIT";
+        writeBuffer(rmessage, true);
+        return;
+    }
+
 
     if (m_command == "get") {
         requestStream >> m_fileName;
