@@ -3,4 +3,3 @@ cmake-build-debug
 .vscode
 .DS_Store
 server_files
-client_files
