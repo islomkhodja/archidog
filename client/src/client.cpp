@@ -1,9 +1,9 @@
+#include "globals.h"
 #include "client.h"
 
 string sendFileWithCommand(tcp::socket& socket, const string& user, const string &file, const string& command) {
-    boost::filesystem::path p(file);
-
-    ifstream source_file(file, ios_base::binary | ios_base::ate);
+    boost::filesystem::path p(dirClient + "/" + file);
+    ifstream source_file(dirClient + "/" + file, ios_base::binary | ios_base::ate);
     if (!source_file)
     {
         std::cout << "failed to open " << file << std::endl;
@@ -61,7 +61,13 @@ string sendFileWithCommand(tcp::socket& socket, const string& user, const string
         return name;
     }
 
-    return file + ".sev";
+    if (command == "zip-and-get") {
+        return file + ".sev";
+    } else if (command == "unzip-and-get") {
+        size_t lastOf = file.find_last_of(".");
+        string path = file.substr(0, lastOf);
+        return path;
+    }
 }
 
 bool getFileWithCommand(tcp::socket& socket, const string& user, const string &file) {
@@ -90,7 +96,7 @@ bool getFileWithCommand(tcp::socket& socket, const string& user, const string &f
     if (pos!=std::string::npos)
         file_path = file_path.substr(pos+1);
 
-    file_path = "../client_files/" + file_path;
+    file_path = dirClient + "/" + file_path;
 
     std::ofstream outputFile(file_path, std::ios_base::binary);
     if (!outputFile)
@@ -135,7 +141,7 @@ bool getFileWithCommand(tcp::socket& socket, const string& user, const string &f
 string zip(const string& user, const string &file) {
     boost::asio::io_context ioContext;
     tcp::resolver resolver(ioContext);
-    tcp::resolver::query query(host, port);
+    tcp::resolver::query query(hostIp, port);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     tcp::resolver::iterator end;
     tcp::socket socket(ioContext);
@@ -147,7 +153,7 @@ string zip(const string& user, const string &file) {
         return __TIME__;
     }
 
-    cout << "connected to " << host << ":" << port << endl;
+    cout << "connected to " << hostIp << ":" << port << endl;
     std::string name;
     name = sendFileWithCommand(socket, user, file, string("zip"));
 
@@ -158,7 +164,7 @@ string zip(const string& user, const string &file) {
 string unzip(const string& user, const string &file) {
     boost::asio::io_context ioContext;
     tcp::resolver resolver(ioContext);
-    tcp::resolver::query query(host, port);
+    tcp::resolver::query query(hostIp, port);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     tcp::resolver::iterator end;
     tcp::socket socket(ioContext);
@@ -170,7 +176,7 @@ string unzip(const string& user, const string &file) {
         return __TIME__;
     }
 
-    cout << "connected to " << host << ":" << port << endl;
+    cout << "connected to " << hostIp << ":" << port << endl;
     std::string name;
     name = sendFileWithCommand(socket, user, file, string("unzip"));
 
@@ -181,7 +187,7 @@ string unzip(const string& user, const string &file) {
 bool get(const string& user, const string& file) {
     boost::asio::io_context ioContext;
     tcp::resolver resolver(ioContext);
-    tcp::resolver::query query(host, port);
+    tcp::resolver::query query(hostIp, port);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     tcp::resolver::iterator end;
     tcp::socket socket(ioContext);
@@ -205,7 +211,7 @@ bool get(const string& user, const string& file) {
 bool zip_and_get(string& user, string& file) {
     boost::asio::io_context ioContext;
     tcp::resolver resolver(ioContext);
-    tcp::resolver::query query(host, port);
+    tcp::resolver::query query(hostIp, port);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     tcp::resolver::iterator end;
     tcp::socket socket(ioContext);
@@ -231,7 +237,7 @@ bool zip_and_get(string& user, string& file) {
 bool unzip_and_get(string& user, string& file) {
     boost::asio::io_context ioContext;
     tcp::resolver resolver(ioContext);
-    tcp::resolver::query query(host, port);
+    tcp::resolver::query query(hostIp, port);
     tcp::resolver::iterator endpoint_iterator = resolver.resolve(query);
     tcp::resolver::iterator end;
     tcp::socket socket(ioContext);

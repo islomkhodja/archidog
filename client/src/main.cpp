@@ -1,30 +1,42 @@
+#include "globals.h"
 #include "client.h"
 
-string host;
-string port;
-
-// TODO: use boost::program_options
 int main(int argc, char* argv[]) {
-    if (argc != 3)
-    {
-        std::cerr << "Usage: " << argv[0] << " <server-address> <file path>" << std::endl;
-        std::cerr << "sample: " << argv[0] << " 127.0.0.1:1234 c:\\tmp\\a.txt" << std::endl;
-        return __LINE__;
-    }
+    setlocale(LC_ALL, "Russian");
+    if (!parse_args(argc, argv)) {
+        std::cout << "set all options" << std::endl;
+        return 0;
+    };
 
     try {
-        string hostPort = argv[1];
-        string fileName = argv[2];
+        string& username = user;
+        string& fileName = file;
 
-        size_t pos = hostPort.find(':');
-        if (pos == string::npos) {
-            return __LINE__;
+        if (command == "get") {
+            get(user, file);
+            return 0;
         }
-        port = hostPort.substr(pos+1);
-        host = hostPort.substr(0, pos);
-        string username = "sevara";
 
-        get(username, fileName);
+        if (command == "zip") {
+            zip(user, file);
+            return 0;
+        }
+
+        if (command == "unzip") {
+            unzip(user, file);
+            return 0;
+        }
+
+        if (command == "zip-and-get") {
+            zip_and_get(user, file);
+            return 0;
+        }
+
+        if (command == "unzip-and-get") {
+            unzip_and_get(user, file);
+            return 0;
+        }
+
     } catch (exception& e) {
         cout << "some error happened" << endl;
         cout << e.what() << endl;

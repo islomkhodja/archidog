@@ -6,11 +6,11 @@
 #include <boost/array.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include "globals.h"
 
 using boost::asio::ip::tcp;
 using namespace std;
-extern string host;
-extern string port;
+
 
 string sendFileWithCommand(tcp::socket& socket, const string& user, const string &file, const string& command);
 bool getFileWithCommand(tcp::socket& socket, const string& user, const string &file);
