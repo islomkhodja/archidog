@@ -12,7 +12,7 @@ using namespace std;
 typedef unsigned int uint;
 typedef unsigned short ushort;
 
-extern string dir;
+extern string dirClient;
 extern boost::asio::ip::address ip;
 extern ushort port;
 extern uint maxNFiles;

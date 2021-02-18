@@ -122,7 +122,7 @@ void Session::commandRouter(size_t t_bytesTransferred) {
         if (pos != std::string::npos)
             m_fileName = m_fileName.substr(pos + 1);
 
-        createFile(m_fileName);
+        createFile(m_fileName + ".tmp");
 
         // записать лишние байты в файл
         do {
@@ -155,7 +155,8 @@ void Session::commandRouter(size_t t_bytesTransferred) {
         if (pos != std::string::npos)
             m_fileName = m_fileName.substr(pos + 1);
 
-        createFile(m_fileName);
+        std::string tempFile = m_fileName + ".tmp";
+        createFile(tempFile);
 
         // записать лишние байты в файл
         do {
@@ -179,8 +180,9 @@ void Session::commandRouter(size_t t_bytesTransferred) {
 void Session::zipLogic() {
     std::cout << "Received file: " << m_fileName << std::endl;
     std::string compressedFileName = getFileName(m_fileName, "zip");
-    compress(m_fileName, compressedFileName);
-    remove(m_fileName);
+    std::string tempFile = m_fileName + ".tmp";
+    compress(tempFile, compressedFileName);
+    remove(tempFile);
     if (m_command == "zip") {
         std::string ok("OK " + compressedFileName);
         std::cout << ok << std::endl;
@@ -193,8 +195,9 @@ void Session::zipLogic() {
 void Session::unZipLogic() {
     std::cout << "Received file: " << m_fileName << std::endl;
     std::string deCompressedFileName = getFileName(m_fileName, "unzip");
-    decompress(m_fileName, deCompressedFileName);
-    remove(m_fileName);
+    std::string tempFile = m_fileName + ".tmp";
+    decompress(tempFile, deCompressedFileName);
+    remove(tempFile);
     if (m_command == "unzip") {
         std::string ok("OK " + deCompressedFileName);
         std::cout << ok << std::endl;
@@ -299,7 +302,7 @@ std::string Session::getFileName(const std::string& fileName, const std::string 
 
 void Session::getCommandHandler(const std::string& fileName) {
     boost::filesystem::path filePath;
-    if (find_file(boost::filesystem::path(dir), fileName, filePath)) {
+    if (find_file(boost::filesystem::path(dirClient), fileName, filePath)) {
         openFile(fileName); // open the file
         // and prepare m_request for request to client
 

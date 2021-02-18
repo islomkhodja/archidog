@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
             );
         }
 
-        ArchiveServer server(ioContext, ip, port, dir);
+        ArchiveServer server(ioContext, ip, port, dirClient);
 
         threadPool.join_all();
     } catch (std::exception& e) {

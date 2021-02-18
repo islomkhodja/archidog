@@ -1,7 +1,7 @@
 #include "globals.h"
 
 // globals
-string dir;
+string dirClient;
 boost::asio::ip::address ip;
 ushort port;
 uint maxNFiles;
@@ -15,12 +15,11 @@ bool parse_args(int argc, char *argv[]) {
     desc.add_options()
             ("help,h", "print usage message")
             ("verbose,v", "verbose mode")
-            ("dir,d", po::value(&dir), "путь до папки сервера, где сохраняются файлы")
+            ("dir,d", po::value(&dirClient), "путь до папки сервера, где сохраняются файлы")
             ("ip,i", po::value<string>(), "IP адрес")
             ("port,p", po::value(&port), "порт")
             ("maxnfiles,n", po::value(&maxNFiles), "максимальное число файлов, что клиент может сохранить")
-            ("reqspermin,r", po::value(&reqsPerMin),
-             "максимальное количество обращений на архивацию от 1 клиента в 1 минуту")
+            ("reqspermin,r", po::value(&reqsPerMin), "максимальное количество обращений на архивацию от 1 клиента в 1 минуту")
             ("workers,w", po::value(&threadsNum), "число потоков");
 
     // Parse argc and argv
@@ -56,7 +55,7 @@ bool parse_args(int argc, char *argv[]) {
         cout << desc << endl;
         return false;
     }
-    dir = vm["dir"].as<string>();
+    dirClient = vm["dir"].as<string>();
     if (!vm.count("ip")) {
         cout << desc << endl;
         return false;
@@ -65,8 +64,8 @@ bool parse_args(int argc, char *argv[]) {
     try {
         ip = boost::asio::ip::address::from_string(ip_str);
     }
-    catch (const exception &ex) {
-        cout << "ip address `" << ip_str << "` is invalid, use 127.0.0.1 instead" << endl;
+    catch (const exception& ex) {
+        cout << "ip address `"<< ip_str << "` is invalid, use 127.0.0.1 instead" << endl;
         return false;
     }
     return true;
