@@ -16,7 +16,7 @@ float compress(std::basic_string<char> fname, std::basic_string<char> cname) {
     for(int i = 0; i < fsize; i++)
     {
         file.seekg(i, std::ios::beg);      // safety net
-        file.read((char*)&character, sizeof(char)); // получить текущую символ
+        file.read((char*)&character, sizeof(char)); // получить текущий символ
         next_character = file.peek();
 
         if(next_character != character)
