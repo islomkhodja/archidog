@@ -79,7 +79,7 @@ void Session::writeBuffer(Buffer& t_buffer, const bool once)
                              boost::asio::bind_executor(my_strand,[this, self, once](boost::system::error_code ec, size_t length)
                              {
                                  if (!ec && !once) {
-                                     if (verbose_flag) std::cout << "writeBuffer(): " << "ok отправили " << length << " байтов. Если что еще раз отправим" << std::endl;
+                                     if (verbose_flag) std::cout << "writeBuffer(): " << "ok sent" << length << " bytes. If anything, we will send it again" << std::endl;
                                      sendFile(ec);
                                  }
                              }));
