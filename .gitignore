@@ -3,3 +3,6 @@ cmake-build-debug
 .vscode
 .DS_Store
 server_files
+.vs
+out
+

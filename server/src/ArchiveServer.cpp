@@ -24,7 +24,7 @@ void ArchiveServer::doAccept() {
                             [this](boost::system::error_code ec) {
                                 if (!ec) {
                                     std::cout << "async_accept::" <<  "клиент подключился!" << std::endl;
-                                    std::make_shared<Session>(std::move(m_socket), m_ioContext)->start();
+                                    std::make_shared<Session>(std::move(m_socket), m_ioContext, m_workDirectory)->start();
                                 }
 
                                 doAccept();

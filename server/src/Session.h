@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include <memory>
+#include <filesystem>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 
@@ -16,7 +17,7 @@ class Session
 public:
     using TcpSocket = boost::asio::ip::tcp::socket;
 
-    Session(TcpSocket t_socket, boost::asio::io_context& ioContext);
+    Session(TcpSocket t_socket, boost::asio::io_context& ioContext, boost::filesystem::path m_workDirectory);
 
     void start()
     {
@@ -44,8 +45,7 @@ private:
     std::string getFileName(std::string const &fileName, std::string type);
     void createFile(std::string const &fileName);
     void sendFile(boost::system::error_code ec);
-    bool find_file(const boost::filesystem::path &dir_path, const std::string &file_name,
-              boost::filesystem::path &path_found);
+    bool find_file(const std::string &file_name, std::filesystem::path &path_found);
     void openFile(const std::string &t_path);
     void remove(std::string &fileName);
     void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
@@ -66,6 +66,7 @@ private:
     std::string m_fileName;
     std::string m_command;
     std::string m_user;
+    boost::filesystem::path m_workDirectory;
 };
 
 template<class Buffer>

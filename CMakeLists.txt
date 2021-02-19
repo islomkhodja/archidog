@@ -1,14 +1,14 @@
 cmake_minimum_required (VERSION 3.2.2)
 
 project("archive-server" CXX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wc++17-extensions")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 ")
 SET(CMAKE_CXX_STANDARD 17)
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(Boost_USE_MULTITHREAD ON)
 # we will use static libs
 set(Boost_USE_STATIC_LIBS ON)
 
-FIND_PACKAGE(Boost 1.58.0 REQUIRED COMPONENTS log_setup log system thread program_options)
+FIND_PACKAGE(Boost 1.55.0 REQUIRED COMPONENTS log_setup log system thread program_options)
 add_definitions(-DBOOST_LOG_DYN_LINK)
 
 add_executable(client client/src/main.cpp common/src/rle.cpp common/src/rle.h client/src/client.cpp client/src/client.h client/src/globals.cpp client/src/globals.h)
