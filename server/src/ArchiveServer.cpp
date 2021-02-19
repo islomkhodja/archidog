@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <boost/filesystem.hpp>
-
+#include "globals.h"
 #include "Session.h"
 #include "ArchiveServer.h"
 
@@ -19,11 +19,11 @@ ArchiveServer::ArchiveServer(IoService &t_ioService, boost::asio::ip::address ip
 }
 
 void ArchiveServer::doAccept() {
-    std::cout << __FUNCTION__ << " пытаемся подключить клиента к серверу" << std::endl;
+    if (verbose_flag) std::cout << __FUNCTION__ << "() пытаемся подключить клиента к серверу" << std::endl;
     m_acceptor.async_accept(m_socket,
                             [this](boost::system::error_code ec) {
                                 if (!ec) {
-                                    std::cout << "async_accept::" <<  "клиент подключился!" << std::endl;
+                                    if (verbose_flag) std::cout << "doAccept(): " <<  "клиент подключился!" << std::endl;
                                     std::make_shared<Session>(std::move(m_socket), m_ioContext, m_workDirectory)->start();
                                 }
 
@@ -36,9 +36,9 @@ void ArchiveServer::createWorkDirectory() {
     auto currentPath = path(m_workDirectory);
 
     if (!exists(currentPath) && !create_directory(currentPath)) {
-        std::cout << "Не удалось создать рабочую папку: " << m_workDirectory << std::endl;;
+        std::cout << "createWorkDirectory(): Не удалось создать рабочую папку: " << m_workDirectory << std::endl;;
     } else {
-        std::cout << "папка создана или уже существует: " << m_workDirectory << std::endl;
+        if (verbose_flag) std::cout << "createWorkDirectory(): папка создана или уже существует: " << m_workDirectory << std::endl;
     }
     current_path(currentPath);
 }

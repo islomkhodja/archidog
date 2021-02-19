@@ -38,6 +38,7 @@ private:
 
     // write methods
     void writeToClient(std::string &message);
+    void sendError(const std::string& errorMessage, int line, const std::string& at);
     template<class Buffer>
     void writeBuffer(Buffer &t_buffer, bool once = false);
 
@@ -78,7 +79,7 @@ void Session::writeBuffer(Buffer& t_buffer, const bool once)
                              boost::asio::bind_executor(my_strand,[this, self, once](boost::system::error_code ec, size_t length)
                              {
                                  if (!ec && !once) {
-                                     std::cout << "ok отправили " << length << " байтов. Если что еще раз отправим" << std::endl;
+                                     if (verbose_flag) std::cout << "writeBuffer(): " << "ok отправили " << length << " байтов. Если что еще раз отправим" << std::endl;
                                      sendFile(ec);
                                  }
                              }));
