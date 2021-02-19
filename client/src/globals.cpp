@@ -13,12 +13,12 @@ bool parse_args(int argc, char *argv[]) {
 
     desc.add_options()
             ("help,h", "print usage message")
-            ("ip, ip", po::value(&hostIp), "IP адрес")
-            ("port,p", po::value(&port), "порт")
-            ("dir,d", po::value(&dirClient), "путь до папки где сохраняются файлы")
-            ("command,c", po::value(&command), "команда")
-            ("username,u", po::value(&user),"имя пользователя")
-            ("file,f", po::value(&file), "файл");
+            ("ip, ip", po::value(&hostIp), "IP addres")
+            ("port,p", po::value(&port), "port")
+            ("dir,d", po::value(&dirClient), "the path to the folder where the files are saved")
+            ("command,c", po::value(&command), "command")
+            ("username,u", po::value(&user),"username")
+            ("file,f", po::value(&file), "file");
 
     // Parse argc and argv
     po::variables_map vm;
