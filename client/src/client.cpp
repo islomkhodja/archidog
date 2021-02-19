@@ -43,6 +43,8 @@ string sendFileWithCommand(tcp::socket& socket, const string& user, const string
         cout << "send byte" << endl;
     }
 
+    source_file.close();
+
     cout << "file stream sent" << endl;
 
     if (command == "zip" || command == "unzip") {
@@ -114,6 +116,7 @@ bool getFileWithCommand(tcp::socket& socket, const string& user, const string &f
     } while (requestStream.gcount() > 0);
 
     if (outputFile.tellp() >= static_cast<std::streamsize>(file_size)) {
+        outputFile.close();
         return true;
     }
 
@@ -125,6 +128,7 @@ bool getFileWithCommand(tcp::socket& socket, const string& user, const string &f
             if (bytes > 0) {
                 outputFile.write(buf.data(), static_cast<std::streamsize>(bytes));
                 if (outputFile.tellp() >= static_cast<std::streamsize>(file_size)) {
+                    outputFile.close();
                     break;
                 }
             }

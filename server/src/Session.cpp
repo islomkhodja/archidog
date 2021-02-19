@@ -4,10 +4,11 @@
 
 std::map<std::string, UserSettings> UserMap;
 
-Session::Session(TcpSocket t_socket, boost::asio::io_context& io)
-        : m_socket(std::move(t_socket)),
-         ioContext(io),
-         my_strand(ioContext) {
+Session::Session(TcpSocket t_socket, boost::asio::io_context& io, boost::filesystem::path m_workDirectory)
+    :   m_socket(std::move(t_socket)),
+        m_workDirectory(m_workDirectory),
+        ioContext(io),
+        my_strand(ioContext) {
 }
 
 
@@ -132,6 +133,7 @@ void Session::commandRouter(size_t t_bytesTransferred) {
         } while (requestStream.gcount() > 0);
 
         if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
+            m_outputFile.close();
             return zipLogic();
         }
 
@@ -166,6 +168,7 @@ void Session::commandRouter(size_t t_bytesTransferred) {
         } while (requestStream.gcount() > 0);
 
         if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
+            m_outputFile.close();
             return unZipLogic();
         }
 
@@ -220,6 +223,7 @@ void Session::zipCommandHandler(const std::string& command) {
                                          std::cout << __FUNCTION__ << " recv " << m_outputFile.tellp() << " bytes" << std::endl;;
 
                                          if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
+                                             m_outputFile.close();
                                              return zipLogic();
                                          }
                                      }
@@ -243,6 +247,7 @@ void Session::unZipCommandHandler(const std::string& command) {
                                          std::cout << __FUNCTION__ << " recv " << m_outputFile.tellp() << " bytes" << std::endl;;
 
                                          if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
+                                            m_outputFile.close();
                                             return unZipLogic();
                                          }
                                      }
@@ -301,8 +306,8 @@ std::string Session::getFileName(const std::string& fileName, const std::string 
 }
 
 void Session::getCommandHandler(const std::string& fileName) {
-    boost::filesystem::path filePath;
-    if (find_file(boost::filesystem::path(dirClient), fileName, filePath)) {
+    std::filesystem::path filePath;
+    if (find_file(fileName, filePath)) {
         openFile(fileName); // open the file
         // and prepare m_request for request to client
 
@@ -331,6 +336,7 @@ void Session::sendFile(boost::system::error_code t_ec) {
             writeBuffer(buf);
         } else {
             std::cout << "конец!" << std:: endl;
+            m_sourceFile.close();
 //            boost::asio::streambuf rmessage;
 //            std::ostream response(&rmessage);
 //            response << "\n\n OK" << " " << m_fileName;
@@ -361,25 +367,21 @@ void Session::openFile(std::string const& t_path)
     std::cout << "Request size: " << m_request_buf_send.size() << std::endl;
 }
 
-bool Session::find_file( const boost::filesystem::path & dir_path,         // in this directory,
-                         const std::string & file_name, // search for this name,
-                         boost::filesystem::path & path_found )            // placing path here if found
+bool Session::find_file(const std::string & file_name, // search for this name,
+                         std::filesystem::path & path_found )            // placing path here if found
 {
-    std::cout << "dir_path: " << dir_path.c_str() << " " << file_name << std::endl;
+    auto currentPath = std::filesystem::current_path();
+    std::cout << "dir_path: " << currentPath.c_str() << " " << file_name << std::endl;
 
-    if ( !exists( dir_path ) ) return false;
-    boost::filesystem::directory_iterator end_itr; // default construction yields past-the-end
-    for ( boost::filesystem::directory_iterator itr( dir_path );
+    if ( !exists(currentPath) ) return false;
+    std::filesystem::directory_iterator end_itr; // default construction yields past-the-end
+    for ( std::filesystem::directory_iterator itr(currentPath);
           itr != end_itr;
           ++itr )
     {
         std::cout << "f:" << itr->path().filename() << std::endl;
 
-        if ( is_directory(itr->status()) )
-        {
-            if ( find_file( itr->path(), file_name, path_found ) ) return true;
-        }
-        else if ( itr->path().filename() == file_name ) // see below
+        if ( itr->path().filename() == file_name ) // see below
         {
             path_found = itr->path();
             return true;
