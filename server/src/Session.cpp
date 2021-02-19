@@ -17,7 +17,7 @@ void Session::read_commands() {
     async_read_until(m_socket, m_request_buf_read, "\n\n",
                      boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
                          if (!ec) {
-                             if (verbose_flag) std::cout << "read_commands(): уже прочитал" << std::endl;
+                             if (verbose_flag) std::cout << "read_commands(): already read" << std::endl;
                              commandRouter(bytes);
                          }
 
@@ -339,7 +339,7 @@ void Session::sendFile(boost::system::error_code t_ec) {
             auto buf = boost::asio::buffer(m_send_buf.data(), static_cast<size_t>(m_sourceFile.gcount()));
             writeBuffer(buf);
         } else {
-            if (verbose_flag) std::cout << "sendFile(): конец!" << std:: endl;
+            if (verbose_flag) std::cout << "sendFile(): end!" << std:: endl;
             m_sourceFile.close();
         }
     } else {
