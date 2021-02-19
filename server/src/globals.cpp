@@ -15,12 +15,12 @@ bool parse_args(int argc, char *argv[]) {
     desc.add_options()
             ("help,h", "print usage message")
             ("verbose,v", "verbose mode")
-            ("dir,d", po::value(&dirClient), "путь до папки сервера, где сохраняются файлы")
-            ("ip,i", po::value<string>(), "IP адрес")
-            ("port,p", po::value(&port), "порт")
-            ("maxnfiles,n", po::value(&maxNFiles), "максимальное число файлов, что клиент может сохранить")
-            ("reqspermin,r", po::value(&reqsPerMin), "максимальное количество обращений на архивацию от 1 клиента в 1 минуту")
-            ("workers,w", po::value(&threadsNum), "число потоков");
+            ("dir,d", po::value(&dirClient), "the path to the server folder where the files are saved")
+            ("ip,i", po::value<string>(), "IP address")
+            ("port,p", po::value(&port), "port")
+            ("maxnfiles,n", po::value(&maxNFiles), "max number of files that the client can save")
+            ("reqspermin,r", po::value(&reqsPerMin), "max number of requests for archiving from 1 client per 1 minute")
+            ("workers,w", po::value(&threadsNum), "number of threads");
 
     // Parse argc and argv
     po::variables_map vm;
