@@ -308,7 +308,7 @@ std::string Session::getFileName(const std::string& fileName, const std::string 
 }
 
 void Session::getCommandHandler(const std::string& fileName) {
-    std::filesystem::path filePath;
+    boost::filesystem::path filePath;
     if (find_file(fileName, filePath)) {
         openFile(fileName); // open the file
         // and prepare m_request for request to client
@@ -367,14 +367,14 @@ void Session::openFile(std::string const& t_path)
 }
 
 bool Session::find_file(const std::string & file_name, // search for this name,
-                         std::filesystem::path & path_found )            // placing path here if found
+                         boost::filesystem::path & path_found )            // placing path here if found
 {
-    auto currentPath = std::filesystem::current_path();
+    auto currentPath = boost::filesystem::current_path();
     if (verbose_flag) std::cout << "dir_path: " << currentPath.c_str() << " " << file_name << std::endl;
 
     if ( !exists(currentPath) ) return false;
-    std::filesystem::directory_iterator end_itr; // default construction yields past-the-end
-    for ( std::filesystem::directory_iterator itr(currentPath);
+    boost::filesystem::directory_iterator end_itr; // default construction yields past-the-end
+    for ( boost::filesystem::directory_iterator itr(currentPath);
           itr != end_itr;
           ++itr )
     {

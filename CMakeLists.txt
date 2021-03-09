@@ -1,8 +1,11 @@
 cmake_minimum_required (VERSION 3.2.2)
 
 project("archive-server" CXX)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /std:c++17 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++17")
 SET(CMAKE_CXX_STANDARD 17)
+set(Boost_INCLUDE_DIR c:/boost/include/)
+set(Boost_LIBRARY_DIR c:/boost/lib/)
+
 SET(CMAKE_CXX_STANDARD_REQUIRED ON)
 SET(Boost_USE_MULTITHREAD ON)
 # we will use static libs
@@ -15,7 +18,7 @@ add_executable(client client/src/main.cpp common/src/rle.cpp common/src/rle.h cl
 
 target_include_directories(client
         PUBLIC
-        ${Boost_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIR}
         "${CMAKE_CURRENT_SOURCE_DIR}/client/"
         )
 
@@ -38,7 +41,7 @@ add_executable(server server/src/main.cpp server/src/ArchiveServer.h server/src/
 
 target_include_directories(server
         PUBLIC
-        ${Boost_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIR}
         "${CMAKE_CURRENT_SOURCE_DIR}/server"
         )
 

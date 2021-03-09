@@ -6,6 +6,11 @@
 
 Сервер будет архивировать поток, получаемый от клиента и хранит некоторые файлы:
 
+## Install
+https://www.ics.uci.edu/~pattis/common/handouts/mingweclipse/mingw.html
+https://gist.github.com/sim642/29caef3cc8afaa273ce6
+https://stackoverflow.com/questions/36519453/setup-boost-in-clion
+
 ## Команды
 
 + "**zip** `<name> <bytes_size>`" - далее клиент шлёт байтовый поток, сервер его архивирует и сохраняет файл у себя.

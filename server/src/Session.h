@@ -7,7 +7,6 @@
 #include <fstream>
 #include <string>
 #include <memory>
-#include <filesystem>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 
@@ -46,7 +45,7 @@ private:
     std::string getFileName(std::string const &fileName, std::string type);
     void createFile(std::string const &fileName);
     void sendFile(boost::system::error_code ec);
-    bool find_file(const std::string &file_name, std::filesystem::path &path_found);
+    bool find_file(const std::string &file_name, boost::filesystem::path &path_found);
     void openFile(const std::string &t_path);
     void remove(std::string &fileName);
     void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
