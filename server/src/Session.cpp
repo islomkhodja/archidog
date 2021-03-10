@@ -178,9 +178,10 @@ void Session::commandRouter(size_t t_bytesTransferred) {
 void Session::zipLogic() {
     if (verbose_flag) std::cout << "zipLogic(): Received file: " << m_fileName << std::endl;
     std::string compressedFileName = getFileName(m_fileName, "zip");
-    std::string tempFile = m_fileName + ".tmp";
-    compress(tempFile, compressedFileName);
-    remove(tempFile);
+    std::string tempFileName = m_fileName + ".tmp";
+
+    compress(tempFileName, compressedFileName);
+    remove(tempFileName);
     if (m_command == "zip") {
         std::string ok("OK " + compressedFileName);
         if (verbose_flag) std::cout << ok << std::endl;
@@ -193,9 +194,9 @@ void Session::zipLogic() {
 void Session::unZipLogic() {
     if (verbose_flag) std::cout << "unZipLogic(): Received file: " << m_fileName << std::endl;
     std::string deCompressedFileName = getFileName(m_fileName, "unzip");
-    std::string tempFile = m_fileName + ".tmp";
-    decompress(tempFile, deCompressedFileName);
-    remove(tempFile);
+    std::string tempFileName = m_fileName + ".tmp";
+    decompress(tempFileName, deCompressedFileName);
+    remove(tempFileName);
     if (m_command == "unzip") {
         std::string ok("OK " + deCompressedFileName);
         if (verbose_flag) std::cout << "unZipLogic(): " << ok << std::endl;

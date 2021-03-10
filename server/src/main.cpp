@@ -6,6 +6,13 @@
 #include "ArchiveServer.h"
 
 
+/*!
+ * Главная функция,
+ * который принимает аргументы терминала, настраивает пул потоков и включает сервер!
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char *argv[])
 {
     setlocale(LC_ALL, "Russian");
@@ -20,7 +27,7 @@ int main(int argc, char *argv[])
         boost::thread_group threadPool;
         for (int i = 0; i < threadsNum; i++) {
             threadPool.create_thread(
-                    boost::bind(&boost::asio::io_service::run, &ioContext)
+                    boost::bind(&boost::asio::io_context::run, &ioContext)
             );
         }
 
