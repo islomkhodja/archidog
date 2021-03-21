@@ -37,6 +37,32 @@ target_compile_options(client
         -DBOOST_LOG_DYN_LINK
         )
 
+    add_executable(test
+            test/main.cpp
+            common/src/rle.cpp
+            common/src/rle.h test/rle_test.cpp test/rle_test.h)
+
+    target_include_directories(test
+            PUBLIC
+            ${Boost_INCLUDE_DIR}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test"
+            )
+
+    target_link_libraries(test
+            PUBLIC
+            Boost::log_setup
+            Boost::log
+            Boost::system
+            Boost::thread
+            Boost::filesystem
+            Boost::program_options
+            )
+
+target_compile_options(test
+        PUBLIC
+        -DBOOST_LOG_DYN_LINK
+        )
+
 add_executable(server server/src/main.cpp server/src/ArchiveServer.h server/src/ArchiveServer.cpp server/src/Session.cpp server/src/Session.h server/src/globals.cpp server/src/globals.h common/src/rle.cpp common/src/rle.h)
 
 target_include_directories(server
