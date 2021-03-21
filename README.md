@@ -23,7 +23,7 @@ https://stackoverflow.com/questions/36519453/setup-boost-in-clion
 
 + "**unzip-and-get** `<name> <bytes_size>`" – сервер одновременно принимает, разархивирует и отсылает сжатые данные обратно клиенту.
 ### Конфигурация сервера
-Запуск ./archsrv
+Запуск ./server.exe
   
 | Аргументы | Описание |
 | --- | --- |
