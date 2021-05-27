@@ -27,6 +27,27 @@ void openTmpFile() {
     cout << "1. file " << test_file_name << " successfully created" << endl;
 }
 
+
+bool is_file_less(const std::string &filename1, const std::string &filename2) {
+    std::ifstream file1(filename1, std::ifstream::ate | std::ifstream::binary); //open file at the end
+    std::ifstream file2(filename2, std::ifstream::ate | std::ifstream::binary); //open file at the end
+    const std::ifstream::pos_type fileSize = file1.tellg();
+    
+    if (fileSize <= file2.tellg()) {
+        file1.seekg(0); //rewind
+        file2.seekg(0); //rewind
+        file1.close();
+        file2.close();
+        return true; 
+    } else {
+        file1.seekg(0); //rewind
+        file2.seekg(0); //rewind
+        file1.close();
+        file2.close();
+        return false; 
+    }
+}
+
 bool compare_files(const std::string &filename1, const std::string &filename2) {
     std::ifstream file1(filename1, std::ifstream::ate | std::ifstream::binary); //open file at the end
     std::ifstream file2(filename2, std::ifstream::ate | std::ifstream::binary); //open file at the end
@@ -53,6 +74,12 @@ void remove(std::string &fileName) {
         cout << "file " << fileName << " successfully deleted" << endl;
 }
 
+void delete_files() {
+    remove(test_file_name);
+    remove(compressed_file_name);
+    remove(decompressed_file_name);   
+}
+
 void rle_test_main() {
     // open tmp file for test
     openTmpFile();
@@ -61,6 +88,18 @@ void rle_test_main() {
 
     compress(test_file_name, compressed_file_name);
     cout << "2. file " << test_file_name << " successfully compressed. Compressed file name is " << compressed_file_name << endl;
+    
+    
+    // compare it
+    cout << "2.1. Checking that the compressed file is smaller than the original. " << compressed_file_name << ", with " << test_file_name << endl;
+    bool isCompressedSmaller = is_file_less(compressed_file_name, test_file_name);
+    if (isCompressedSmaller) {
+        cout << "Files " << compressed_file_name << " lesser or equal than " << test_file_name << endl;
+    } else {
+        cout << "Files " << compressed_file_name << " bigger than " << test_file_name << endl;
+        cout << "FAIL!" << endl;
+        delete_files();
+    }
 
     // decompress it
     decompress(compressed_file_name, decompressed_file_name);
@@ -71,14 +110,14 @@ void rle_test_main() {
     bool check = compare_files(test_file_name, decompressed_file_name);
     if (check) {
         cout << "Files " << test_file_name << ", with " << decompressed_file_name << " are identical" << endl;
+        cout << "SUCCESS!" << endl;
     } else {
         cout << "Files " << test_file_name << ", with " << decompressed_file_name << " are not identical" << endl;
+        cout << "FAIL!" << endl;
     }
-
+    
     // after all, delete them all
-    remove(test_file_name);
-    remove(compressed_file_name);
-    remove(decompressed_file_name);
+    delete_files();
 }
 
 
