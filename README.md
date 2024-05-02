@@ -2,6 +2,9 @@
 
 Это асинхронный архив-сервер с пулом потоков.
 
+
+![DALL·E 2024-05-02 23 07 14 - A logo for an archive server project featuring a dog  The logo should be simple and modern, focusing on a stylized, abstract representation of a dog  ](https://github.com/islomkhodja/archidog/assets/4748226/d16169ff-10ed-4d54-b0c5-a2815e7c63b5)
+
 ## Описание
 
 Сервер будет архивировать поток, получаемый от клиента и хранит некоторые файлы:
