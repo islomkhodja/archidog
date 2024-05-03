@@ -2,13 +2,8 @@
 #define BOOST_ARCHIVE_SERVER_H
 
 #include <iostream>
-#include <array>
-#include <fstream>
 #include <string>
-#include <memory>
 #include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
-#include "Session.h"
 
 /*!
  * \class ArchiveServer
@@ -26,20 +21,20 @@ public:
     /*!
      * Конструктор класса, принимает
      *
-     * @param t_ioСontext
+     * @param ioСontext
      * @param ip
-     * @param t_port
-     * @param t_workDirectory
+     * @param port
+     * @param workDirectory
      *
      *  инициализирует m_acceptor, m_socket
      */
-    ArchiveServer(IoContext& t_ioСontext, boost::asio::ip::address ip, short t_port, std::string const& t_workDirectory);
+    ArchiveServer(IoContext& ioСontext, const boost::asio::ip::address& ip, short port, std::string const& workDirectory);
 
 private:
     /*!
      * \brief метод который создает каталог если еще не создано
      */
-    void createWorkDirectory();
+    void createWorkDirectory() const;
 
     /*! \brief асинхроно выполняет работу по приему клиентов (запускается рекурсивно)
      *
@@ -52,19 +47,19 @@ private:
     void doAccept();
 
     /// сокет
-    TcpSocket m_socket;
+    TcpSocket socket;
 
     /// acceptor — приемник который принимает клиентские подключения.
-    TcpAcceptor m_acceptor;
+    TcpAcceptor acceptor;
 
     /// рабочий каталог
-    std::string m_workDirectory;
+    std::string workDirectory;
 
     /*!
      * Boost.Asio использует io_context для общения с сервисом ввода/вывода операционной системы.
      * в классе будем хранить
      */
-    IoContext& m_ioContext;
+    IoContext& ioContext;
 };
 
 #endif //BOOST_ARCHIVE_SERVER_H

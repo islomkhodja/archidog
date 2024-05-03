@@ -6,7 +6,6 @@
 #include <array>
 #include <fstream>
 #include <string>
-#include <memory>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 
@@ -20,13 +19,13 @@ public:
 
     void start()
     {
-        read_commands();
+        readCommands();
     }
 
 private:
     // main methods
-    void read_commands();
-    void commandRouter(size_t t_bytesTransferred);
+    void readCommands();
+    void commandRouter(size_t bytesTransferred);
     bool checkUserActive();
     //TODO remove command params from Handlers
     void zipCommandHandler(const std::string &command);
@@ -45,37 +44,37 @@ private:
     std::string getFileName(std::string const &fileName, std::string type);
     void createFile(std::string const &fileName);
     void sendFile(boost::system::error_code ec);
-    bool find_file(const std::string &file_name, boost::filesystem::path &path_found);
+    bool findFile(const std::string &file_name, boost::filesystem::path &path_found);
     void openFile(const std::string &t_path);
     void remove(std::string &fileName);
     void handleError(std::string const& t_functionName, boost::system::error_code const& t_ec);
 
 
-    TcpSocket m_socket;
+    TcpSocket socket;
     boost::asio::io_context& ioContext;
-    boost::asio::io_context::strand my_strand;
-    boost::asio::streambuf m_request_buf_read;
-    boost::asio::streambuf m_request_buf_send;
+    boost::asio::io_context::strand myStrand;
+    boost::asio::streambuf requestBufRead;
+    boost::asio::streambuf requestBufSend;
     enum { MaxLength = 40960 };
-    std::array<char, MaxLength> m_read_buf;
+    std::array<char, MaxLength> readBuf;
     enum { MessageSize = 1024 };
-    std::array<char, MessageSize> m_send_buf;
-    std::ofstream m_outputFile;
-    std::ifstream m_sourceFile;
-    size_t m_fileSize;
-    std::string m_fileName;
-    std::string m_command;
-    std::string m_user;
-    boost::filesystem::path m_workDirectory;
+    std::array<char, MessageSize> sendBuf;
+    std::ofstream outputFile;
+    std::ifstream sourceFile;
+    size_t fileSize;
+    std::string fileName;
+    std::string command;
+    std::string user;
+    boost::filesystem::path workDirectory;
 };
 
 template<class Buffer>
 void Session::writeBuffer(Buffer& t_buffer, const bool once)
 {
     auto self(shared_from_this());
-    boost::asio::async_write(m_socket,
+    boost::asio::async_write(socket,
                              t_buffer,
-                             boost::asio::bind_executor(my_strand,[this, self, once](boost::system::error_code ec, size_t length)
+                             boost::asio::bind_executor(myStrand,[this, self, once](boost::system::error_code ec, size_t length)
                              {
                                  if (!ec && !once) {
                                      if (verbose_flag) std::cout << "writeBuffer(): " << "ok sent" << length << " bytes. If anything, we will send it again" << std::endl;

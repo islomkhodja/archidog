@@ -5,17 +5,17 @@
 std::map<std::string, UserSettings> UserMap;
 
 Session::Session(TcpSocket t_socket, boost::asio::io_context& io, boost::filesystem::path m_workDirectory)
-    :   m_socket(std::move(t_socket)),
-        m_workDirectory(m_workDirectory),
+    :   socket(std::move(t_socket)),
+        workDirectory(m_workDirectory),
         ioContext(io),
-        my_strand(ioContext) {
+        myStrand(ioContext) {
 }
 
 
-void Session::read_commands() {
+void Session::readCommands() {
     auto self = shared_from_this();
-    async_read_until(m_socket, m_request_buf_read, "\n\n",
-                     boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, size_t bytes) {
+    async_read_until(socket, requestBufRead, "\n\n",
+                     boost::asio::bind_executor(myStrand, [this, self](boost::system::error_code ec, size_t bytes) {
                          if (!ec) {
                              if (verbose_flag) std::cout << "read_commands(): already read" << std::endl;
                              commandRouter(bytes);
@@ -27,60 +27,60 @@ void Session::read_commands() {
 }
 
 bool Session::checkUserActive() {
-    if (UserMap.find(m_user) == UserMap.end()) {
-        UserMap[m_user] = { 1, time(nullptr), 0 };
+    if (UserMap.find(user) == UserMap.end()) {
+        UserMap[user] = { 1, time(nullptr), 0 };
     } else {
         std::time_t currentTime = time(nullptr);
-        double diff = difftime(currentTime, UserMap[m_user].lastActiveTime);
+        double diff = difftime(currentTime, UserMap[user].lastActiveTime);
         if (diff > 60) {
-            UserMap[m_user].userReqCount = 1;
+            UserMap[user].userReqCount = 1;
         } else {
-            UserMap[m_user].userReqCount += 1;
+            UserMap[user].userReqCount += 1;
         };
 
-        if (UserMap[m_user].userReqCount > reqsPerMin) {
+        if (UserMap[user].userReqCount > reqsPerMin) {
             std::cout << "checkUserActive(): many requests" << std::endl;
             return false;
         }
 
-        if (m_command  == "zip"
-        || m_command == "zip-and-get"
-        || m_command == "unzip-and-get"
-        || m_command == "unzip")
+        if (command  == "zip"
+        || command == "zip-and-get"
+        || command == "unzip-and-get"
+        || command == "unzip")
         {
-            UserMap[m_user].userMaxFile += 1;
+            UserMap[user].userMaxFile += 1;
         }
 
 
-        if (UserMap[m_user].userMaxFile > maxNFiles) {
+        if (UserMap[user].userMaxFile > maxNFiles) {
             std::cout << "checkUserActive(): user has reached the limit file" << std::endl;
             return false;
         }
 
-        UserMap[m_user].lastActiveTime = currentTime;
+        UserMap[user].lastActiveTime = currentTime;
     }
 
     return true;
 }
 
-void Session::commandRouter(size_t t_bytesTransferred) {
-    if (verbose_flag) std::cout << __FUNCTION__ << "(" << t_bytesTransferred << ")"
-                                << ", in_avail = " << m_request_buf_read.in_avail() << ", size = "
-                                << m_request_buf_read.size() << ", max_size = " << m_request_buf_read.max_size() << "." << std::endl;
+void Session::commandRouter(size_t bytesTransferred) {
+    if (verbose_flag) std::cout << __FUNCTION__ << "(" << bytesTransferred << ")"
+                                << ", in_avail = " << requestBufRead.in_avail() << ", size = "
+                                << requestBufRead.size() << ", max_size = " << requestBufRead.max_size() << "." << std::endl;
     if (verbose_flag) {
-        boost::asio::streambuf::const_buffers_type bufs = m_request_buf_read.data();
-        std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + t_bytesTransferred);
+        boost::asio::streambuf::const_buffers_type bufs = requestBufRead.data();
+        std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + bytesTransferred);
         std::cout << "line: " << line << std::endl;
     }
-    std::istream requestStream(&m_request_buf_read);
-    requestStream >> m_command;
-    if (m_command.empty()) {
+    std::istream requestStream(&requestBufRead);
+    requestStream >> command;
+    if (command.empty()) {
         sendError("COMMAND_IS_EMPTY", __LINE__, "commandRouter");
         return;
     }
 
-    requestStream >> m_user;
-    if (m_user.empty()) {
+    requestStream >> user;
+    if (user.empty()) {
         sendError("USERNAME_IS_EMPTY", __LINE__, "commandRouter");
         return;
     }
@@ -91,22 +91,22 @@ void Session::commandRouter(size_t t_bytesTransferred) {
     }
 
 
-    if (m_command == "get") {
-        requestStream >> m_fileName;
-        if (m_fileName.empty()) {
+    if (command == "get") {
+        requestStream >> fileName;
+        if (fileName.empty()) {
             sendError("FILENAME_IS_EMPTY", __LINE__, "commandRouter");
             return;
         }
 
-        getCommandHandler(m_fileName);
+        getCommandHandler(fileName);
         return;
     }
 
 
-    if (m_command == "zip" || m_command == "zip-and-get") {
-        requestStream >> m_fileName;
-        requestStream >> m_fileSize;
-        if (m_fileName.empty() || !m_fileSize) {
+    if (command == "zip" || command == "zip-and-get") {
+        requestStream >> fileName;
+        requestStream >> fileSize;
+        if (fileName.empty() || !fileSize) {
             sendError("ZIP_WRONG_ARGS", __LINE__, "commandRouter");
             return;
         }
@@ -114,61 +114,61 @@ void Session::commandRouter(size_t t_bytesTransferred) {
 
 
         // убирать 2 /n
-        requestStream.read(m_read_buf.data(), 2);
+        requestStream.read(readBuf.data(), 2);
 
-        auto pos = m_fileName.find_last_of('\\');
+        auto pos = fileName.find_last_of('\\');
         if (pos != std::string::npos)
-            m_fileName = m_fileName.substr(pos + 1);
+            fileName = fileName.substr(pos + 1);
 
-        createFile(m_fileName + ".tmp");
+        createFile(fileName + ".tmp");
 
         // записать лишние байты в файл
         do {
-            requestStream.read(m_read_buf.data(), m_read_buf.size());
+            requestStream.read(readBuf.data(), readBuf.size());
             if (verbose_flag) std::cout << __FUNCTION__ << " write " << requestStream.gcount() << " bytes." << std::endl;;
-            m_outputFile.write(m_read_buf.data(), requestStream.gcount());
+            outputFile.write(readBuf.data(), requestStream.gcount());
         } while (requestStream.gcount() > 0);
 
-        if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
-            m_outputFile.close();
+        if (outputFile.tellp() >= static_cast<std::streamsize>(fileSize)) {
+            outputFile.close();
             return zipLogic();
         }
 
-        zipCommandHandler(m_command);
+        zipCommandHandler(command);
         return;
     }
 
-    if (m_command == "unzip" || m_command == "unzip-and-get") {
-        requestStream >> m_fileName;
-        requestStream >> m_fileSize;
-        if (m_fileName.empty() || !m_fileSize) {
+    if (command == "unzip" || command == "unzip-and-get") {
+        requestStream >> fileName;
+        requestStream >> fileSize;
+        if (fileName.empty() || !fileSize) {
             sendError("UNZIP_WRONG_ARGS", __LINE__, "commandRouter");
             return;
         }
 
         // убирать 2 /n
-        requestStream.read(m_read_buf.data(), 2);
+        requestStream.read(readBuf.data(), 2);
 
-        auto pos = m_fileName.find_last_of('\\');
+        auto pos = fileName.find_last_of('\\');
         if (pos != std::string::npos)
-            m_fileName = m_fileName.substr(pos + 1);
+            fileName = fileName.substr(pos + 1);
 
-        std::string tempFile = m_fileName + ".tmp";
+        std::string tempFile = fileName + ".tmp";
         createFile(tempFile);
 
         // записать лишние байты в файл
         do {
-            requestStream.read(m_read_buf.data(), m_read_buf.size());
+            requestStream.read(readBuf.data(), readBuf.size());
             if (verbose_flag) std::cout << __FUNCTION__ << " write " << requestStream.gcount() << " bytes." << std::endl;;
-            m_outputFile.write(m_read_buf.data(), requestStream.gcount());
+            outputFile.write(readBuf.data(), requestStream.gcount());
         } while (requestStream.gcount() > 0);
 
-        if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
-            m_outputFile.close();
+        if (outputFile.tellp() >= static_cast<std::streamsize>(fileSize)) {
+            outputFile.close();
             return unZipLogic();
         }
 
-        unZipCommandHandler(m_command);
+        unZipCommandHandler(command);
         return;
     }
 
@@ -176,32 +176,32 @@ void Session::commandRouter(size_t t_bytesTransferred) {
 }
 
 void Session::zipLogic() {
-    if (verbose_flag) std::cout << "zipLogic(): Received file: " << m_fileName << std::endl;
-    std::string compressedFileName = getFileName(m_fileName, "zip");
-    std::string tempFileName = m_fileName + ".tmp";
+    if (verbose_flag) std::cout << "zipLogic(): Received file: " << fileName << std::endl;
+    std::string compressedFileName = getFileName(fileName, "zip");
+    std::string tempFileName = fileName + ".tmp";
 
     compress(tempFileName, compressedFileName);
     remove(tempFileName);
-    if (m_command == "zip") {
+    if (command == "zip") {
         std::string ok("OK " + compressedFileName);
         if (verbose_flag) std::cout << ok << std::endl;
         writeToClient(ok);
-    } else if (m_command  == "zip-and-get"){
+    } else if (command  == "zip-and-get"){
         getCommandHandler(compressedFileName);
     }
 }
 
 void Session::unZipLogic() {
-    if (verbose_flag) std::cout << "unZipLogic(): Received file: " << m_fileName << std::endl;
-    std::string deCompressedFileName = getFileName(m_fileName, "unzip");
-    std::string tempFileName = m_fileName + ".tmp";
+    if (verbose_flag) std::cout << "unZipLogic(): Received file: " << fileName << std::endl;
+    std::string deCompressedFileName = getFileName(fileName, "unzip");
+    std::string tempFileName = fileName + ".tmp";
     decompress(tempFileName, deCompressedFileName);
     remove(tempFileName);
-    if (m_command == "unzip") {
+    if (command == "unzip") {
         std::string ok("OK " + deCompressedFileName);
         if (verbose_flag) std::cout << "unZipLogic(): " << ok << std::endl;
         writeToClient(ok);
-    } else if (m_command  == "unzip-and-get"){
+    } else if (command  == "unzip-and-get"){
         getCommandHandler(deCompressedFileName);
     }
 }
@@ -209,17 +209,17 @@ void Session::unZipLogic() {
 void Session::zipCommandHandler(const std::string& command) {
     auto self = shared_from_this();
     if (verbose_flag) std::cout << "zipCommandHandler(): read wait" << std::endl;
-    m_socket.async_read_some(boost::asio::buffer(m_read_buf.data(), m_read_buf.size()),
-                             boost::asio::bind_executor(my_strand, [this, self, command](boost::system::error_code ec, size_t bytes) {
+    socket.async_read_some(boost::asio::buffer(readBuf.data(), readBuf.size()),
+                             boost::asio::bind_executor(myStrand, [this, self, command](boost::system::error_code ec, size_t bytes) {
                                  if (!ec) {
                                      if (verbose_flag) std::cout << "zipCommandHandler(): recv " << bytes << " from response" << std::endl;
                                      if (bytes > 0) {
-                                         m_outputFile.write(m_read_buf.data(), static_cast<std::streamsize>(bytes));
+                                         outputFile.write(readBuf.data(), static_cast<std::streamsize>(bytes));
 
-                                         if (verbose_flag) std::cout << "zipCommandHandler() " << " recv " << m_outputFile.tellp() << " bytes" << std::endl;
+                                         if (verbose_flag) std::cout << "zipCommandHandler() " << " recv " << outputFile.tellp() << " bytes" << std::endl;
 
-                                         if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
-                                             m_outputFile.close();
+                                         if (outputFile.tellp() >= static_cast<std::streamsize>(fileSize)) {
+                                             outputFile.close();
                                              return zipLogic();
                                          }
                                      }
@@ -233,17 +233,17 @@ void Session::zipCommandHandler(const std::string& command) {
 
 void Session::unZipCommandHandler(const std::string& command) {
     auto self = shared_from_this();
-    m_socket.async_read_some(boost::asio::buffer(m_read_buf.data(), m_read_buf.size()),
-                             boost::asio::bind_executor(my_strand, [this, self, command](boost::system::error_code ec, size_t bytes) {
+    socket.async_read_some(boost::asio::buffer(readBuf.data(), readBuf.size()),
+                             boost::asio::bind_executor(myStrand, [this, self, command](boost::system::error_code ec, size_t bytes) {
                                  if (!ec) {
                                      if (verbose_flag) std::cout << "unZipCommandHandler(): recv " << bytes << " from response" << std::endl;
                                      if (bytes > 0) {
-                                         if (verbose_flag) m_outputFile.write(m_read_buf.data(), static_cast<std::streamsize>(bytes));
+                                         if (verbose_flag) outputFile.write(readBuf.data(), static_cast<std::streamsize>(bytes));
 
-                                         if (verbose_flag) std::cout << "unZipCommandHandler(): " << " recv " << m_outputFile.tellp() << " bytes" << std::endl;;
+                                         if (verbose_flag) std::cout << "unZipCommandHandler(): " << " recv " << outputFile.tellp() << " bytes" << std::endl;;
 
-                                         if (m_outputFile.tellp() >= static_cast<std::streamsize>(m_fileSize)) {
-                                            m_outputFile.close();
+                                         if (outputFile.tellp() >= static_cast<std::streamsize>(fileSize)) {
+                                            outputFile.close();
                                             return unZipLogic();
                                          }
                                      }
@@ -256,9 +256,9 @@ void Session::unZipCommandHandler(const std::string& command) {
 }
 
 void Session::createFile(std::string const &fileName) {
-    m_outputFile.open(fileName, std::ios_base::binary);
-    if (!m_outputFile) {
-        std::cout << "createFile()" << ": Failed to create: " << m_fileName << std::endl;;
+    outputFile.open(fileName, std::ios_base::binary);
+    if (!outputFile) {
+        std::cout << "createFile()" << ": Failed to create: " << fileName << std::endl;;
         return;
     }
 }
@@ -278,8 +278,8 @@ void Session::handleError(std::string const &t_functionName, boost::system::erro
 
 void Session::writeToClient(std::string &message) {
     auto self(shared_from_this());
-    boost::asio::async_write(m_socket, boost::asio::buffer(message),
-                             boost::asio::bind_executor(my_strand, [this, self](boost::system::error_code ec, std::size_t)
+    boost::asio::async_write(socket, boost::asio::buffer(message),
+                             boost::asio::bind_executor(myStrand, [this, self](boost::system::error_code ec, std::size_t)
                              {
                                  if (!ec)
                                  {
@@ -310,11 +310,11 @@ std::string Session::getFileName(const std::string& fileName, const std::string 
 
 void Session::getCommandHandler(const std::string& fileName) {
     boost::filesystem::path filePath;
-    if (find_file(fileName, filePath)) {
+    if (findFile(fileName, filePath)) {
         openFile(fileName); // open the file
         // and prepare m_request for request to client
 
-        writeBuffer(m_request_buf_send); // send to client;
+        writeBuffer(requestBufSend); // send to client;
     } else {
         sendError("FILE_NOT_FOUND", __LINE__, "getCommandHandler()");
         return;
@@ -324,24 +324,24 @@ void Session::getCommandHandler(const std::string& fileName) {
 
 void Session::sendFile(boost::system::error_code t_ec) {
     if (!t_ec) {
-        if (m_sourceFile) {
-            m_sourceFile.read(m_send_buf.data(), m_send_buf.size());
-            if (m_sourceFile.fail() && !m_sourceFile.eof()) {
+        if (sourceFile) {
+            sourceFile.read(sendBuf.data(), sendBuf.size());
+            if (sourceFile.fail() && !sourceFile.eof()) {
                 auto msg = "sendFile(): Failed while reading file";
                 std::cout << msg;
                 throw std::fstream::failure(msg);
             }
             if (verbose_flag) {
                 std::stringstream ss;
-                ss << "sendFile(): Send " << m_sourceFile.gcount() << " bytes, total: "
-                   << m_sourceFile.tellg() << " bytes";
+                ss << "sendFile(): Send " << sourceFile.gcount() << " bytes, total: "
+                   << sourceFile.tellg() << " bytes";
                 std::cout << ss.str() << std::endl;
             }
-            auto buf = boost::asio::buffer(m_send_buf.data(), static_cast<size_t>(m_sourceFile.gcount()));
+            auto buf = boost::asio::buffer(sendBuf.data(), static_cast<size_t>(sourceFile.gcount()));
             writeBuffer(buf);
         } else {
             if (verbose_flag) std::cout << "sendFile(): end!" << std:: endl;
-            m_sourceFile.close();
+            sourceFile.close();
         }
     } else {
         std::cout << "sendFile(): Error: " << t_ec.message();
@@ -350,24 +350,24 @@ void Session::sendFile(boost::system::error_code t_ec) {
 
 void Session::openFile(std::string const& t_path)
 {
-    m_sourceFile.open(t_path, std::ios_base::binary | std::ios_base::ate);
-    if (m_sourceFile.fail())
+    sourceFile.open(t_path, std::ios_base::binary | std::ios_base::ate);
+    if (sourceFile.fail())
         throw std::fstream::failure("Failed while opening file " + t_path);
 
     // получить размер файла
-    m_sourceFile.seekg(0, m_sourceFile.end);
-    auto fileSize = m_sourceFile.tellg();
-    m_sourceFile.seekg(0, m_sourceFile.beg);
+    sourceFile.seekg(0, sourceFile.end);
+    auto fileSize = sourceFile.tellg();
+    sourceFile.seekg(0, sourceFile.beg);
 
 
-    std::ostream requestStream(&m_request_buf_send);
+    std::ostream requestStream(&requestBufSend);
     boost::filesystem::path p(t_path);
-    m_fileName = p.filename().string();
-    requestStream << "Ready " << m_fileName << " " << fileSize << "\n\n";
-    if (verbose_flag) std::cout << "Request size: " << m_request_buf_send.size() << std::endl;
+    fileName = p.filename().string();
+    requestStream << "Ready " << fileName << " " << fileSize << "\n\n";
+    if (verbose_flag) std::cout << "Request size: " << requestBufSend.size() << std::endl;
 }
 
-bool Session::find_file(const std::string & file_name, // search for this name,
+bool Session::findFile(const std::string & file_name, // search for this name,
                          boost::filesystem::path & path_found )            // placing path here if found
 {
     auto currentPath = boost::filesystem::current_path();

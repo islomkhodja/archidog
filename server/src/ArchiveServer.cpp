@@ -6,11 +6,11 @@
 #include "ArchiveServer.h"
 
 
-ArchiveServer::ArchiveServer(IoContext &t_ioСontext, boost::asio::ip::address ip, short t_port, std::string const &t_workingDirectory)
-        : m_socket(t_ioСontext),
-          m_ioContext(t_ioСontext),
-          m_acceptor(t_ioСontext, boost::asio::ip::tcp::endpoint(ip, t_port)),
-          m_workDirectory(t_workingDirectory) {
+ArchiveServer::ArchiveServer(IoContext &ioСontext, const boost::asio::ip::address& ip, const short port, std::string const &workDirectory)
+        : socket(ioСontext),
+          acceptor(ioСontext, boost::asio::ip::tcp::endpoint(ip, port)),
+          workDirectory(workDirectory),
+          ioContext(ioСontext) {
     std::cout << "Server started\n";
 
     createWorkDirectory();
@@ -20,26 +20,26 @@ ArchiveServer::ArchiveServer(IoContext &t_ioСontext, boost::asio::ip::address i
 
 void ArchiveServer::doAccept() {
     if (verbose_flag) std::cout << __FUNCTION__ << "() trying to connect the client to the server" << std::endl;
-    m_acceptor.async_accept(m_socket,
+    acceptor.async_accept(socket,
                             [this](boost::system::error_code ec) {
                                 if (!ec) {
                                     if (verbose_flag) std::cout << "doAccept(): " <<  "the client is connected!" << std::endl;
-                                    std::make_shared<Session>(std::move(m_socket), m_ioContext, m_workDirectory)->start();
+                                    std::make_shared<Session>(std::move(socket), ioContext, workDirectory)->start();
                                 }
 
                                 doAccept();
                             });
 }
 
-void ArchiveServer::createWorkDirectory() {
-    using namespace boost::filesystem;
-    auto currentPath = path(m_workDirectory);
+void ArchiveServer::createWorkDirectory() const {
+    const auto currentPath = boost::filesystem::path(workDirectory);
 
-    if (!exists(currentPath) && !create_directory(currentPath)) {
-        std::cout << "createWorkDirectory(): Couldn't create working folder: " << m_workDirectory << std::endl;;
+    if (!boost::filesystem::exists(currentPath) && !boost::filesystem::create_directory(currentPath)) {
+        std::cout << "createWorkDirectory(): Couldn't create working folder: " << workDirectory << std::endl;;
     } else {
-        if (verbose_flag) std::cout << "createWorkDirectory(): folder created or already exists: " << m_workDirectory << std::endl;
+        if (verbose_flag) std::cout << "createWorkDirectory(): folder created or already exists: " << workDirectory << std::endl;
     }
-    current_path(currentPath);
+    boost::filesystem::current_path(currentPath);
 }
+
 
