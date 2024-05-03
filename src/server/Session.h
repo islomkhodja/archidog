@@ -25,7 +25,7 @@ public:
 private:
     // main methods
     void readCommands();
-    void commandRouter(size_t bytesTransferred);
+    void commandRouter(size_t t_bytesTransferred);
     bool checkUserActive();
     //TODO remove command params from Handlers
     void zipCommandHandler(const std::string &command);

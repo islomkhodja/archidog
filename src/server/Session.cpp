@@ -1,6 +1,6 @@
 #include "globals.h"
 #include "Session.h"
-#include "../common/src/rle.h"
+#include "../common/rle.h"
 
 std::map<std::string, UserSettings> UserMap;
 
@@ -63,13 +63,13 @@ bool Session::checkUserActive() {
     return true;
 }
 
-void Session::commandRouter(size_t bytesTransferred) {
-    if (verbose_flag) std::cout << __FUNCTION__ << "(" << bytesTransferred << ")"
+void Session::commandRouter(size_t t_bytesTransferred) {
+    if (verbose_flag) std::cout << __FUNCTION__ << "(" << t_bytesTransferred << ")"
                                 << ", in_avail = " << requestBufRead.in_avail() << ", size = "
                                 << requestBufRead.size() << ", max_size = " << requestBufRead.max_size() << "." << std::endl;
     if (verbose_flag) {
         boost::asio::streambuf::const_buffers_type bufs = requestBufRead.data();
-        std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + bytesTransferred);
+        std::string line(boost::asio::buffers_begin(bufs), boost::asio::buffers_begin(bufs) + t_bytesTransferred);
         std::cout << "line: " << line << std::endl;
     }
     std::istream requestStream(&requestBufRead);
